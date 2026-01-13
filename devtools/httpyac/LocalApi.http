@@ -1,0 +1,57 @@
+### カテゴリ一覧の取得
+GET http://localhost:3000/api/categories
+
+### カテゴリの作成
+POST http://localhost:3000/api/admin/categories
+Content-Type: application/json
+
+### カテゴリの削除
+@category_id_to_delete = 6e360028-9e4c-4406-a12a-2e5042d8dd0b
+DELETE http://localhost:3000/api/admin/categories/{{category_id_to_delete}}
+
+### カテゴリの名前を変更
+@category_id_to_update = <ここに編集したいカテゴリのIDを入力>
+PUT http://localhost:3000/api/admin/categories/{{category_id_to_update}}
+Content-Type: application/json
+
+
+{
+  "name": "新しいaaaa"
+}
+
+### 記事の投稿
+POST http://localhost:3000/api/admin/posts
+Content-Type: application/json
+
+{
+  "title": "投稿X",
+  "content": "投稿Xの本文。<br/>投稿Xの本文。投稿Xの本文。",
+  "coverImageURL": "https://w1980.blob.core.windows.net/pg3/cover-img-purple.jpg",
+  "categoryIds": [
+    "697793eb-0da3-4ac7-b969-dc8669fb51cd",
+    "e9c878a3-015e-4a8e-8dff-2505d0b3306c"
+  ]
+}
+
+### 投稿記事(単体)の取得
+@post_id_to_get = bf813204-faab-4b85-879a-939027efc5bc
+GET http://localhost:3000/api/posts/{{post_id_to_get}}
+
+### 投稿記事の削除
+@post_id_to_delete = bf813204-faab-4b85-879a-939027efc5bc
+DELETE http://localhost:3000/api/admin/posts/{{post_id_to_delete}}
+
+### 投稿記事の更新
+@post_id_to_update = bf813204-faab-4b85-879a-939027efc5bc
+PUT http://localhost:3000/api/admin/posts/{{post_id_to_update}}
+Content-Type: application/json
+
+{
+  "title": "更新された投稿タイトル",
+  "content": "更新された投稿の本文。",
+  "coverImageURL": "https://w1980.blob.core.windows.net/pg3/cover-img-updated.jpg",
+  "categoryIds": [
+    "697793eb-0da3-4ac7-b969-dc8669fb51cd",
+    "e9c878a3-015e-4a8e-8dff-2505d0b3306c"
+  ]
+}

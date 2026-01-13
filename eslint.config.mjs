@@ -12,6 +12,14 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    settings: {
+      tailwindcss: {
+        callees: ["cn", "twMerge", "tv"],
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": "off",
+    },
     ignores: [
       "node_modules/**",
       ".next/**",
