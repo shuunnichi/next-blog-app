@@ -11,5 +11,5 @@ export type Post = {
   createdAt: string;
   updatedAt: string;
   categories: PostCategory[];
-  coverImageURL: string;
+  coverImageKey: string;
 };

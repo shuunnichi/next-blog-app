@@ -6,6 +6,7 @@ import { faSpinner, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/_hooks/useAuth";
 
 const Page: React.FC = () => {
   const [posts, setPosts] = useState<Post[] | null>(null);
@@ -13,6 +14,7 @@ const Page: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { token } = useAuth();
   const router = useRouter();
 
   const fetchPosts = async () => {
@@ -62,6 +64,9 @@ const Page: React.FC = () => {
       const res = await fetch(requestUrl, {
         method: "DELETE",
         cache: "no-store",
+        headers: {
+          Authorization: token ?? "",
+        },
       });
 
       if (!res.ok) {
@@ -98,6 +103,7 @@ const Page: React.FC = () => {
     );
   }
 
+  // エラーが発生した場合もエラーメッセージを表示
   if (fetchErrorMsg) {
     return <div className="text-red-500">{fetchErrorMsg}</div>;
   }

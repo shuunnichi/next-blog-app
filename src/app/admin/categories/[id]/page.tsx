@@ -7,6 +7,7 @@ import { twMerge } from "tailwind-merge";
 import { Category } from "@/app/_types/Category";
 import { faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
+import { useAuth } from "@/app/_hooks/useAuth";
 
 // カテゴリをフェッチしたときのレスポンスのデータ型
 type CategoryApiResponse = {
@@ -29,6 +30,8 @@ const Page: React.FC = () => {
 
   // 動的ルートパラメータから id を取得 （URL:/admin/categories/[id]）
   const { id } = useParams() as { id: string };
+
+  const { token } = useAuth();
 
   // ページの移動に使用するフック
   const router = useRouter();
@@ -120,6 +123,7 @@ const Page: React.FC = () => {
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ?? "",
         },
         body: JSON.stringify({ name: newCategoryName }),
       });
@@ -155,6 +159,9 @@ const Page: React.FC = () => {
       const res = await fetch(requestUrl, {
         method: "DELETE",
         cache: "no-store",
+        headers: {
+          Authorization: token ?? "",
+        },
       });
 
       if (!res.ok) {

@@ -11,6 +11,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import Link from "next/link";
+import { useAuth } from "@/app/_hooks/useAuth"; // Assuming useAuth is imported from this path
+import { supabase } from "@/utils/supabase";
+import CryptoJS from "crypto-js";
 
 // カテゴリをフェッチしたときのレスポンスのデータ型
 type RawApiCategoryResponse = {
@@ -25,7 +28,7 @@ type PostApiResponse = {
   id: string;
   title: string;
   content: string;
-  coverImageURL: string;
+  coverImageKey: string;
   createdAt: string;
   updatedAt: string; // APIから返ってくると想定して追加
   categories: {
@@ -51,10 +54,12 @@ const Page: React.FC = () => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newCoverImageURL, setNewCoverImageURL] = useState("");
+  const [newCoverImageKey, setNewCoverImageKey] = useState("");
+  const [newCoverImageUrl, setNewCoverImageUrl] = useState("");
 
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const { token } = useAuth();
 
   // カテゴリ配列 (State)
   const [checkableCategories, setCheckableCategories] = useState<
@@ -133,7 +138,12 @@ const Page: React.FC = () => {
 
     setNewTitle(rawApiPostResponse.title);
     setNewContent(rawApiPostResponse.content);
-    setNewCoverImageURL(rawApiPostResponse.coverImageURL);
+    setNewCoverImageKey(rawApiPostResponse.coverImageKey);
+
+    const publicUrlResult = supabase.storage
+      .from("cover-image")
+      .getPublicUrl(rawApiPostResponse.coverImageKey);
+    setNewCoverImageUrl(publicUrlResult.data.publicUrl);
 
     const selectedIds = new Set(
       rawApiPostResponse.categories.map((c) => c.category.id)
@@ -166,8 +176,39 @@ const Page: React.FC = () => {
     setNewContent(e.target.value);
   };
 
-  const updateNewCoverImageURL = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewCoverImageURL(e.target.value);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 画像が選択されていない場合は戻る
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    // 複数ファイルが選択されている場合は最初のファイルを使用する
+    const file = e.target.files[0];
+
+    // ファイルのハッシュ値を計算
+    const buffer = await file.arrayBuffer();
+    const wordArray = CryptoJS.lib.WordArray.create(buffer);
+    const fileHash = CryptoJS.MD5(wordArray).toString();
+
+    // バケット内のパスを指定
+    const path = `private/${fileHash}`;
+
+    // ファイルが存在する場合は上書きするための設定 → upsert: true
+    const { data, error } = await supabase.storage
+      .from("cover-image")
+      .upload(path, file, { upsert: true });
+
+    if (error || !data) {
+      window.alert(`アップロードに失敗 ${error.message}`);
+      return;
+    }
+
+    // 画像のキー (実質的にバケット内のパス) を取得
+    setNewCoverImageKey(data.path);
+
+    // プレビュー用に画像のURLを取得
+    const publicUrlResult = supabase.storage
+      .from("cover-image")
+      .getPublicUrl(data.path);
+    setNewCoverImageUrl(publicUrlResult.data.publicUrl);
   };
 
   const handleCopyId = async () => {
@@ -188,7 +229,7 @@ const Page: React.FC = () => {
       const requestBody = {
         title: newTitle,
         content: newContent,
-        coverImageURL: newCoverImageURL,
+        coverImageKey: newCoverImageKey,
         categoryIds: checkableCategories
           ? checkableCategories.filter((c) => c.isSelect).map((c) => c.id)
           : [],
@@ -199,6 +240,7 @@ const Page: React.FC = () => {
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ?? "",
         },
         body: JSON.stringify(requestBody),
       });
@@ -232,6 +274,9 @@ const Page: React.FC = () => {
       const res = await fetch(requestUrl, {
         method: "DELETE",
         cache: "no-store",
+        headers: {
+          Authorization: token ?? "",
+        },
       });
 
       if (!res.ok) {
@@ -382,26 +427,24 @@ const Page: React.FC = () => {
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="coverImageURL" className="block font-bold">
-            カバーイメージ (URL)
+          <label htmlFor="coverImageKey" className="block font-bold">
+            カバーイメージ
           </label>
           <input
-            type="url"
-            id="coverImageURL"
-            name="coverImageURL"
+            type="file"
+            id="coverImageKey"
+            name="coverImageKey"
             className="w-full rounded-md border-2 px-2 py-1"
-            value={newCoverImageURL}
-            onChange={updateNewCoverImageURL}
-            placeholder="カバーイメージのURLを記入してください"
-            required
+            onChange={handleImageChange}
+            accept="image/*"
           />
           
           {/* 画像のプレビュー表示 */}
-          {newCoverImageURL && (
+          {newCoverImageUrl && (
             <div className="mt-2 rounded-md border border-gray-300 bg-gray-50 p-2">
               <div className="mb-1 text-xs text-gray-500">プレビュー:</div>
               <img
-                src={newCoverImageURL}
+                src={newCoverImageUrl}
                 alt="Preview"
                 className="h-auto max-h-64 max-w-full rounded object-contain"
                 onError={(e) => {

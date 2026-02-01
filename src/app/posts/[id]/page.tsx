@@ -6,6 +6,7 @@ import type { Post } from "@/app/_types/Post";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import Image from "next/image";
+import { supabase } from "@/utils/supabase";
 
 import DOMPurify from "isomorphic-dompurify";
 
@@ -73,13 +74,17 @@ const Page: React.FC = () => {
     ALLOWED_TAGS: ["b", "strong", "i", "em", "u", "br"],
   });
 
+  const publicUrlResult = supabase.storage
+    .from("cover-image")
+    .getPublicUrl(post.coverImageKey);
+
   return (
     <main>
       <div className="space-y-2">
         <div className="mb-2 text-2xl font-bold">{post.title}</div>
         <div>
           <Image
-            src={post.coverImageURL}
+            src={publicUrlResult.data.publicUrl}
             alt={post.title}
             width={1280}
             height={720}

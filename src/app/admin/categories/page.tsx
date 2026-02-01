@@ -6,6 +6,7 @@ import { faSpinner, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/_hooks/useAuth";
 
 const Page: React.FC = () => {
   const [categories, setCategories] = useState<Category[] | null>(null);
@@ -13,6 +14,7 @@ const Page: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { token } = useAuth();
   const router = useRouter();
 
   const fetchCategories = async () => {
@@ -66,6 +68,9 @@ const Page: React.FC = () => {
       const res = await fetch(requestUrl, {
         method: "DELETE",
         cache: "no-store",
+        headers: {
+          Authorization: token ?? "",
+        },
       });
 
       if (!res.ok) {

@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
+import { supabase } from "@/utils/supabase";
 
 type RequestBody = {
   title: string;
   content: string;
-  coverImageURL: string;
+  coverImageKey: string;
   categoryIds: string[];
 };
 
@@ -14,9 +15,18 @@ export const PUT = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: any
 ) => {
+  const authorization = req.headers.get("Authorization");
+  if (!authorization)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const token = authorization.split(" ")[1] || authorization;
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 401 });
+
   try {
-    const { id: postId } = context.params;
-    const { title, content, coverImageURL, categoryIds }: RequestBody =
+    const { id: postId } = await context.params;
+    const { title, content, coverImageKey, categoryIds }: RequestBody =
       await req.json();
 
     // categoryIds で指定されるカテゴリがDB上に存在するか確認
@@ -42,7 +52,7 @@ export const PUT = async (
         data: {
           title,
           content,
-          coverImageURL,
+          coverImageKey,
         },
       });
 
@@ -75,8 +85,17 @@ export const DELETE = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: any
 ) => {
+  const authorization = req.headers.get("Authorization");
+  if (!authorization)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const token = authorization.split(" ")[1] || authorization;
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 401 });
+
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     const post = await prisma.post.delete({
       where: { id },
     });

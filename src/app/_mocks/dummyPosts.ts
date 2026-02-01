@@ -8,7 +8,7 @@ const dummyPosts: Post[] = [
     title: "投稿3",
     content:
       "秋は夕暮れ。<br/>夕日のさして山の端いと近うなりたるに、烏の寝どころへ行くとて、三つ四つ、二つ三つなど、飛びいそぐさへあはれなり。まいて雁などのつらねたるが、いと小さく見ゆるはいとをかし。<br/>日入りはてて、風の音、虫の 音など、はたいふべきにあらず。",
-    coverImageURL: "https://w1980.blob.core.windows.net/pg3/cover-img-red.jpg",
+    coverImageKey: "https://w1980.blob.core.windows.net/pg3/cover-img-red.jpg",
     categories: [
       {
         category: {
@@ -31,7 +31,7 @@ const dummyPosts: Post[] = [
     title: "投稿2",
     content:
       "夏は夜。<br/>月のころはさらなり。<br/>やみもなほ、蛍の多く飛びちがひたる。また、 ただ一つ二つなど、ほのかにうち光りて行くもをかし。雨など降るもをかし。",
-    coverImageURL:
+    coverImageKey:
       "https://w1980.blob.core.windows.net/pg3/cover-img-green.jpg",
     categories: [
       {
@@ -49,7 +49,7 @@ const dummyPosts: Post[] = [
     title: "投稿1",
     content:
       "春はあけぼの。<br/>やうやう白くなりゆく山ぎは、すこしあかりて、紫だちたる 雲のほそくたなびきたる。",
-    coverImageURL:
+    coverImageKey:
       "https://w1980.blob.core.windows.net/pg3/cover-img-purple.jpg",
     categories: [
       {

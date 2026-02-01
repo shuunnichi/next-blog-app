@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const GET = async (req: NextRequest, context: any) => {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     const post = await prisma.post.findUnique({
       where: { id },
       select: {
@@ -13,7 +16,7 @@ export const GET = async (req: NextRequest, context: any) => {
         content: true,
         createdAt: true,
         updatedAt: true,
-        coverImageURL: true,
+        coverImageKey: true,
         categories: {
           select: {
             category: {

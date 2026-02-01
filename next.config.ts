@@ -8,7 +8,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "w1980.blob.core.windows.net" },
       { protocol: "https", hostname: "placehold.jp" },
       { protocol: "https", hostname: "images.microcms-assets.io" },
-      { protocol: "https", hostname: "static.wikia.nocookie.net" }, // 追加
+      {
+        protocol: "https",
+        hostname: "**.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
 };

@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
+import { useAuth } from "@/app/_hooks/useAuth";
+import { supabase } from "@/utils/supabase";
+import CryptoJS from "crypto-js";
 
 // カテゴリをフェッチしたときのレスポンスのデータ型
 type CategoryApiResponse = {
@@ -28,8 +31,9 @@ const Page: React.FC = () => {
 
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
-  const [newCoverImageURL, setNewCoverImageURL] = useState("");
+  const [newCoverImageKey, setNewCoverImageKey] = useState("");
 
+  const { token, isLoading: isAuthLoading } = useAuth(); // トークンの取得
   const router = useRouter();
 
   // カテゴリ配列 (State)。取得中と取得失敗時は null、既存カテゴリが0個なら []
@@ -82,15 +86,22 @@ const Page: React.FC = () => {
     fetchCategories();
   }, []);
 
+  // ▼ 追加: 認証済みでない場合はリダイレクト
+  useEffect(() => {
+    if (!isAuthLoading && !token) {
+      router.push("/login");
+    }
+  }, [isAuthLoading, token, router]);
+
   // チェックボックスの状態 (State) を更新する関数
   const switchCategoryState = (categoryId: string) => {
     if (!checkableCategories) return;
 
     setCheckableCategories(
       checkableCategories.map((category) =>
-          category.id === categoryId
-            ? { ...category, isSelect: !category.isSelect }
-            : category
+        category.id === categoryId
+          ? { ...category, isSelect: !category.isSelect }
+          : category
       )
     );
   };
@@ -105,14 +116,44 @@ const Page: React.FC = () => {
     setNewContent(e.target.value);
   };
 
-  const updateNewCoverImageURL = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // ここにカバーイメージURLのバリデーション処理を追加する
-    setNewCoverImageURL(e.target.value);
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 画像が選択されていない場合は戻る
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    // 複数ファイルが選択されている場合は最初のファイルを使用する
+    const file = e.target.files[0];
+
+    // ファイルのハッシュ値を計算
+    const buffer = await file.arrayBuffer();
+    const wordArray = CryptoJS.lib.WordArray.create(buffer);
+    const fileHash = CryptoJS.MD5(wordArray).toString();
+
+    // バケット内のパスを指定
+    const path = `private/${fileHash}`;
+
+    // ファイルが存在する場合は上書きするための設定 → upsert: true
+    const { data, error } = await supabase.storage
+      .from("cover-image")
+      .upload(path, file, { upsert: true });
+
+    if (error || !data) {
+      window.alert(`アップロードに失敗 ${error.message}`);
+      return;
+    }
+
+    // 画像のキー (実質的にバケット内のパス) を取得
+    setNewCoverImageKey(data.path);
   };
 
   // フォームの送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // この処理をしないとページがリロードされるので注意
+
+    // ▼ 追加: トークンが取得できない場合はアラートを表示して処理中断
+    if (!token) {
+      window.alert("予期せぬ動作：トークンが取得できません。");
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -121,7 +162,7 @@ const Page: React.FC = () => {
       const requestBody = {
         title: newTitle,
         content: newContent,
-        coverImageURL: newCoverImageURL,
+        coverImageKey: newCoverImageKey,
         categoryIds: checkableCategories
           ? checkableCategories.filter((c) => c.isSelect).map((c) => c.id)
           : [],
@@ -133,6 +174,7 @@ const Page: React.FC = () => {
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token, // ◀ 追加
         },
         body: JSON.stringify(requestBody),
       });
@@ -160,6 +202,16 @@ const Page: React.FC = () => {
       <div className="text-gray-500">
         <FontAwesomeIcon icon={faSpinner} className="mr-1 animate-spin" />
         Loading...
+      </div>
+    );
+  }
+
+  // ▼ 追加: 認証のロード中もローディングを表示
+  if (isAuthLoading) {
+    return (
+      <div className="text-gray-500">
+        <FontAwesomeIcon icon={faSpinner} className="mr-1 animate-spin" />
+        Authenticating...
       </div>
     );
   }
@@ -220,19 +272,23 @@ const Page: React.FC = () => {
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="coverImageURL" className="block font-bold">
-            カバーイメージ (URL)
+          <label htmlFor="coverImageKey" className="block font-bold">
+            カバーイメージ
           </label>
           <input
-            type="url"
-            id="coverImageURL"
-            name="coverImageURL"
+            type="file"
+            id="coverImageKey"
+            name="coverImageKey"
             className="w-full rounded-md border-2 px-2 py-1"
-            value={newCoverImageURL}
-            onChange={updateNewCoverImageURL}
-            placeholder="カバーイメージのURLを記入してください"
-            required
+            onChange={handleImageChange}
+            accept="image/*"
+            required // ファイル添付を必須にする
           />
+          {newCoverImageKey && (
+            <div className="mt-1 text-sm text-gray-400">
+              key: {newCoverImageKey}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1">
