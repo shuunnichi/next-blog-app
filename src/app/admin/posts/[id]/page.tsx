@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useAuth } from "@/app/_hooks/useAuth"; // Assuming useAuth is imported from this path
 import { supabase } from "@/utils/supabase";
 import CryptoJS from "crypto-js";
+import Image from "next/image";
 
 // カテゴリをフェッチしたときのレスポンスのデータ型
 type RawApiCategoryResponse = {
@@ -443,14 +444,14 @@ const Page: React.FC = () => {
           {newCoverImageUrl && (
             <div className="mt-2 rounded-md border border-gray-300 bg-gray-50 p-2">
               <div className="mb-1 text-xs text-gray-500">プレビュー:</div>
-              <img
+              <Image
                 src={newCoverImageUrl}
                 alt="Preview"
                 className="h-auto max-h-64 max-w-full rounded object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://placehold.jp/30/dddddd/888888/400x300.png?text=No%20Image";
-                }}
+                width={800}
+                height={600}
+                style={{ width: 'auto', height: 'auto' }} // アスペクト比を維持するためのスタイル
+                unoptimized // 外部URL等の場合に最適化をスキップすることが必要な場合があります
               />
             </div>
           )}
