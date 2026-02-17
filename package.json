@@ -14,7 +14,7 @@
     "@fortawesome/react-fontawesome": "^3.1.1",
     "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.90.1",
     "crypto-js": "^4.2.0",
     "isomorphic-dompurify": "^2.35.0",
