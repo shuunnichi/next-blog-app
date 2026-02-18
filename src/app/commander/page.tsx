@@ -26,10 +26,12 @@ export default function CommanderPage() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(false);  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const galleryRef = useRef<HTMLDivElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+  const [showDeviceDeleteConfirm, setShowDeviceDeleteConfirm] = useState(false);
 
   // デバイス一覧取得（アクティブ判定付き）
   const fetchDevices = async () => {
@@ -216,6 +218,113 @@ export default function CommanderPage() {
 
     return () => clearInterval(interval);
   }, [autoRefresh, selectedDevice]);
+
+  // 写真削除
+  const deletePhoto = async (photoId: string) => {
+    try {
+      console.log("Deleting photo:", photoId);
+      const response = await fetch(`/api/photos/${photoId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete photo");
+      }
+
+      console.log("Photo deleted successfully");
+      
+      // 写真一覧を再取得
+      if (selectedDevice) {
+        await fetchPhotos(selectedDevice);
+      }
+      
+      setShowDeleteConfirm(false);
+      setPhotoToDelete(null);
+    } catch (error) {
+      console.error("写真削除エラー:", error);
+      alert("写真の削除に失敗しました");
+    }
+  };
+
+  // デバイス削除
+  const deleteDevice = async () => {
+    if (!selectedDevice) return;
+
+    try {
+      console.log("Deleting device:", selectedDevice);
+      const response = await fetch(`/api/devices?deviceId=${selectedDevice}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete device");
+      }
+
+      console.log("Device deleted successfully");
+      
+      // デバイス一覧を再取得
+      await fetchDevices();
+      
+      // 選択をクリア
+      setSelectedDevice("");
+      setPhotos([]);
+      setShowDeviceDeleteConfirm(false);
+    } catch (error) {
+      console.error("デバイス削除エラー:", error);
+      alert("デバイスの削除に失敗しました");
+    }
+  };
+
+  // 写真のないデバイスを一括削除
+  const deleteEmptyDevices = async () => {
+    try {
+      const emptyDevices = [];
+      
+      // 各デバイスの写真数をチェック
+      for (const device of devices) {
+        const response = await fetch(`/api/photos?deviceId=${device.deviceId}`);
+        if (response.ok) {
+          const photos = await response.json();
+          if (photos.length === 0) {
+            emptyDevices.push(device.deviceId);
+          }
+        }
+      }
+
+      if (emptyDevices.length === 0) {
+        alert("写真のないデバイスはありません");
+        return;
+      }
+
+      if (!confirm(`${emptyDevices.length}個の空のデバイスを削除しますか？`)) {
+        return;
+      }
+
+      console.log("Deleting empty devices:", emptyDevices);
+
+      // 各デバイスを削除
+      for (const deviceId of emptyDevices) {
+        await fetch(`/api/devices?deviceId=${deviceId}`, {
+          method: "DELETE",
+        });
+      }
+
+      alert(`${emptyDevices.length}個のデバイスを削除しました`);
+      
+      // デバイス一覧を再取得
+      await fetchDevices();
+      
+      // 削除されたデバイスが選択されていた場合はクリア
+      if (selectedDevice && emptyDevices.includes(selectedDevice)) {
+        setSelectedDevice("");
+        setPhotos([]);
+      }
+    } catch (error) {
+      console.error("空デバイス削除エラー:", error);
+      alert("デバイスの削除に失敗しました");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">      {/* ヘッダー */}
       <div className="border-b border-white/10 backdrop-blur-sm bg-black/80 sticky top-0 z-50">
@@ -309,18 +418,40 @@ export default function CommanderPage() {
                   </svg>
                   <span className="text-sm font-light group-hover:text-white/80 transition-colors">自動更新 (3秒)</span>
                 </div>
-              </label>
-
-              {/* デバイス更新 */}
+              </label>              {/* デバイス更新 */}
               <button
                 onClick={fetchDevices}
-                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl text-sm font-light transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl text-sm font-light transition-all duration-200 flex items-center justify-center gap-2 mb-3"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 デバイス一覧を更新
               </button>
+
+              {/* 空デバイス削除 */}
+              <button
+                onClick={deleteEmptyDevices}
+                className="w-full bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 py-2.5 rounded-xl text-sm font-light transition-all duration-200 flex items-center justify-center gap-2 mb-3 text-white/60 hover:text-red-400"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                空デバイスを削除
+              </button>
+
+              {/* 選択中のデバイスを削除 */}
+              {selectedDevice && (
+                <button
+                  onClick={() => setShowDeviceDeleteConfirm(true)}
+                  className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 py-2.5 rounded-xl text-sm font-light transition-all duration-200 flex items-center justify-center gap-2 text-red-400"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  このデバイスを削除
+                </button>
+              )}
             </div>
           </div>          {/* 右: 写真ギャラリー（スマホ最適化） */}
           <div className="lg:col-span-2">
@@ -412,23 +543,37 @@ export default function CommanderPage() {
                         ← スワイプで切り替え →
                       </div>
                     )}
-                  </div>
-
-                  {/* 写真情報 */}
+                  </div>                  {/* 写真情報 */}
                   <div className="p-4 md:p-5 bg-white/5 border-b border-white/10">
-                    <p className="text-sm text-white/80 font-mono truncate">
-                      {photos[currentPhotoIndex].fileName}
-                    </p>
-                    <p className="text-xs text-white/50 mt-1 font-light">
-                      {new Date(photos[currentPhotoIndex].createdAt).toLocaleString("ja-JP", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit"
-                      })}
-                    </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white/80 font-mono truncate">
+                          {photos[currentPhotoIndex].fileName}
+                        </p>
+                        <p className="text-xs text-white/50 mt-1 font-light">
+                          {new Date(photos[currentPhotoIndex].createdAt).toLocaleString("ja-JP", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit"
+                          })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPhotoToDelete(photos[currentPhotoIndex].id);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="flex-shrink-0 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 p-2 rounded-lg transition-all duration-200"
+                        title="この写真を削除"
+                      >
+                        <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   {/* サムネイル一覧（横スクロール） */}
@@ -456,10 +601,77 @@ export default function CommanderPage() {
                   </div>
                 </div>
               )}
+            </div>          </div>
+        </div>
+      </div>
+
+      {/* 写真削除確認モーダル */}
+      {showDeleteConfirm && photoToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 max-w-md w-full backdrop-blur-md">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-light mb-2">写真を削除しますか？</h3>
+              <p className="text-sm text-white/60">この操作は取り消せません</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setPhotoToDelete(null);
+                }}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => photoToDelete && deletePhoto(photoToDelete)}
+                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200"
+              >
+                削除する
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* デバイス削除確認モーダル */}
+      {showDeviceDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 max-w-md w-full backdrop-blur-md">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-light mb-2">デバイスを削除しますか？</h3>
+              <p className="text-sm text-white/60 mb-3">このデバイスと紐づく全ての写真が削除されます</p>
+              {photos.length > 0 && (
+                <p className="text-sm text-red-400 font-medium">{photos.length}枚の写真が削除されます</p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeviceDeleteConfirm(false)}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={deleteDevice}
+                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

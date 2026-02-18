@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase-server";
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 // デバイス一覧取得
 export async function GET() {
   try {
@@ -96,30 +99,81 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// デバイス削除
+// デバイス削除（写真も一緒に削除）
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await getCurrentUser();
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get("deviceId");
-    
+
+    console.log("=== DELETE /api/devices ===");
+    console.log("deviceId:", deviceId);
+
     if (!deviceId) {
-      return NextResponse.json(
-        { error: "deviceId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "deviceId is required" }, { status: 400 });
     }
 
-    // 関連する写真とコントロールレコードを削除（Cascadeが効くはず）
-    await prisma.device.delete({
+    // デバイスを取得
+    const device = await prisma.device.findFirst({
       where: { deviceId },
     });
 
-    return NextResponse.json({ success: true });
+    if (!device) {
+      return NextResponse.json({ error: "Device not found" }, { status: 404 });
+    }
+
+    // デバイスの所有者確認（認証がある場合のみ）
+    if (user && device.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // デバイスに紐づく写真を取得
+    const photos = await prisma.photo.findMany({
+      where: { deviceId }
+    });
+
+    console.log(`Deleting ${photos.length} photos for device ${deviceId}`);
+
+    // Supabaseストレージから写真を削除
+    if (supabaseUrl && supabaseKey) {
+      for (const photo of photos) {
+        const urlParts = photo.url.split("/public/photos/");
+        if (urlParts.length === 2) {
+          const filePath = urlParts[1];
+          const deleteUrl = `${supabaseUrl}/storage/v1/object/photos/${filePath}`;
+          
+          try {
+            const deleteResponse = await fetch(deleteUrl, {
+              method: "DELETE",
+              headers: {
+                "Authorization": `Bearer ${supabaseKey}`,
+              },
+            });
+
+            if (!deleteResponse.ok) {
+              console.warn(`Failed to delete photo from storage: ${photo.id}`);
+            }
+          } catch (err) {
+            console.warn(`Error deleting photo from storage: ${photo.id}`, err);
+          }
+        }
+      }
+    }
+
+    // DBから写真を削除
+    await prisma.photo.deleteMany({
+      where: { deviceId }
+    });
+
+    // DBからデバイスを削除
+    await prisma.device.delete({
+      where: { id: device.id }
+    });
+
+    console.log(`Device deleted: ${deviceId}`);
+    return NextResponse.json({ success: true, deletedPhotos: photos.length });
   } catch (error) {
-    console.error("DELETE /api/devices error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete device" },
-      { status: 500 }
-    );
+    console.error("DELETE error:", error);
+    return NextResponse.json({ error: "Failed to delete device" }, { status: 500 });
   }
 }
