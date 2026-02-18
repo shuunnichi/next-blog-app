@@ -12,11 +12,11 @@ if (!supabaseUrl || !supabaseKey) {
 // 個別写真削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
-    const photoId = params.id;
+    const { id: photoId } = await params;
 
     console.log("=== DELETE /api/photos/[id] ===");
     console.log("photoId:", photoId);
