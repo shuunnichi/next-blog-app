@@ -1,60 +1,27 @@
 "use client";
-import { useState, useEffect } from "react";
-import type { Post } from "@/app/_types/Post";
-import PostSummary from "@/app/_components/PostSummary";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 
-const Page: React.FC = () => {
-  const [posts, setPosts] = useState<Post[] | null>(null);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export default function HomePage() {
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        // ローカルのAPIルートから記事データを取得
-        const requestUrl = "/api/posts";
-        const response = await fetch(requestUrl, {
-          method: "GET",
-          cache: "no-store",
-        });
-        if (!response.ok) {
-          throw new Error("データの取得に失敗しました");
-        }
-        const data = await response.json();
-        setPosts(data as Post[]);
-      } catch (e) {
-        setFetchError(
-          e instanceof Error ? e.message : "予期せぬエラーが発生しました"
-        );
-      }
-    };
-    fetchPosts();
-  }, []);
-
-  if (fetchError) {
-    return <div>{fetchError}</div>;
-  }
-
-  if (!posts) {
-    return (
-      <div className="text-gray-500">
-        <FontAwesomeIcon icon={faSpinner} className="mr-1 animate-spin" />
-        Loading...
-      </div>
-    );
-  }
+    // トップページにアクセスしたら自動的にmode-selectへリダイレクト
+    router.replace("/mode-select");
+  }, [router]);
 
   return (
-    <main>
-      <div className="mb-2 text-2xl font-bold">Main</div>
-      <div className="space-y-3">
-        {posts.map((post) => (
-          <PostSummary key={post.id} post={post} />
-        ))}
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-lg bg-white/10 flex items-center justify-center">
+          <svg className="w-7 h-7 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <p className="text-white/60 font-light">Loading...</p>
       </div>
-    </main>
+    </div>
   );
-};
-
-export default Page;
+}
