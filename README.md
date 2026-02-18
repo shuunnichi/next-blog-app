@@ -1,50 +1,91 @@
-# 🔇 SilentEye - 無音監視カメラシステム
+# Silent Camera - リアルタイム遠隔無音撮影システム
 
-Next.js + Supabase で構築されたリアルタイム遠隔カメラシステム
+スマホを無音カメラ化し、スマホだけでなくPCなどの別ブラウザから遠隔操作でシャッターを切ることができる、リアルタイム遠隔撮影システムです。
 
-## 概要
+### 公開URL
 
-SilentEye は、スマートフォンを無音カメラとして遠隔操作できるシステムです。
-- **Agent モード**: スマホ側で動作し、遠隔指示を受けて撮影
-- **Commander モード**: PC側で動作し、デバイスを選択して撮影指令を送信
+**https://silent-camera-v1.vercel.app**
 
-## 技術スタック
+### 開発情報
 
-- **Frontend**: Next.js 15 (App Router)
-- **Database**: Supabase PostgreSQL
-- **Storage**: Supabase Storage
-- **ORM**: Prisma 5.22.0
-- **Styling**: Tailwind CSS
+* **開発期間**: 2026年2月1日 〜 2026年2月18日（約 20 時間）
 
-## Getting Started
+---
 
-まず、開発サーバーを起動します:
+## アプリ概要
 
-```bash
-npm run dev
-```
+音を出さずに撮影したいときに、普通のアプリではそれができない。しかしアプリをつかえば、無音で撮影しクラウドにアップすることができます。
 
-ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+このアプリは、スマホ端末と制御側の2つのモードを備えています。スマホを設置し、無音で撮影指示を待ち受け、撮影された写真は即座にクラウドへ保存されます。
 
-## 主要機能
+## 特徴と主な機能
 
-- 📱 **Agent**: カメラ撮影、デバイス登録、設定管理
-- 💻 **Commander**: デバイス選択、撮影指令、写真ギャラリー
-- 🔄 **リアルタイム通信**: 2秒ごとのポーリングで即座に反映
-- 💾 **永続化**: localStorage でデバイス情報を保存
-- 🗑️ **管理機能**: 全写真削除、空デバイス削除
+### 1. 遠隔シャッター機能
 
-## Learn More
+Commander（PC側）からボタン一つで、離れた場所にあるAgent（スマホ）のカメラを起動・撮影させることができます。
 
-To learn more about Next.js, take a look at the following resources:
+### 2. リアルタイム・プレビュー & 管理
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+撮影された写真は Supabase Storage に即座にアップロードされ、Commander 側で撮影結果をリアルタイムに確認・管理（閲覧・削除）できます。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. 無音・ブラウザベースの動作
 
-## Deploy on Vercel
+ブラウザだけで完結し、標準のカメラシャッター音に邪魔されずにスマホだけでも撮影が可能です。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. 高度なデバイス管理
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+複数のデバイスを Agent として運用することを想定し、各デバイスの状態（オンライン/オフライン）を最終更新時刻から判定して表示します。
+
+---
+
+## 📸 スクリーンショット / デモ
+
+1. **メインメニュー**
+<img width="1253" height="789" alt="image" src="https://github.com/user-attachments/assets/2b810b0b-c849-439d-acfa-3321a37df33e" />
+
+2. **Agent モード**
+<img width="506" height="900" alt="image" src="https://github.com/user-attachments/assets/5f1f992a-c9fb-47c5-ab3a-1ac774b6bea8" />
+<img width="506" height="900" alt="image" src="https://github.com/user-attachments/assets/1fe41b31-2d72-445c-9c5d-fc6328ea988f" />
+
+3. **Commander モード**
+<img width="1628" height="937" alt="image" src="https://github.com/user-attachments/assets/ca0d7fc4-f45d-48ea-b888-5e602761266b" />
+
+
+---
+
+## 使用技術 (技術スタック)
+
+### フロントエンド / バックエンド
+
+* **Next.js 15 (App Router)**: 最新の非同期 API 仕様に基づいた実装
+* **TypeScript**: 型安全な開発の徹底
+* **Tailwind CSS**: モダンスタイルおよびレスポンシブデザイン
+* **Prisma**: PostgreSQL との型安全な ORM 接続
+* **Supabase**:
+* **PostgreSQL**: デバイス情報および写真メタデータの管理
+* **Storage**: 写真データのホスティング
+
+
+* **Vercel**: アプリケーションのデプロイと運用
+
+### システム構成図
+
+---
+
+## 工夫した点・苦労した点
+
+### 1. 撮影の重複実行防止 (Race Condition)
+
+ポーリングによる撮影指令の取得時、ネットワークの遅延や State 更新のタイミングにより、1回の指令で複数枚撮影されてしまう問題が発生しました。これを解決するため、`useRef` を用いたフラグ管理を導入し、状態更新を待たずに即座に二重実行をブロックするロジックを実装しました。
+
+### 2. アニメーションの工夫
+
+撮影時に画面を一瞬白く光らせる「フラッシュ効果」や、削除実行時のローディングスピナーの実装など、ブラウザベースでもネイティブアプリに近い操作感を得られるようディテールを調整しました。
+
+
+
+## 今後の展望
+
+* **WebSocket (Supabase Realtime) への移行**: ポーリングによる遅延を解消し、完全リアルタイムな撮影を実現する。
+* **PWA (Progressive Web App) 対応**: スマホ側でフルスクリーン起動し、より「カメラデバイス」としての操作感を高める。
+* **ログイン機能の実装**: 今のままでも手軽に使えて便利ではあるが、誰でもアクセスできるというセキュリティ的な問題を修正する。
