@@ -47,6 +47,7 @@ next-env.d.ts
 # prisma.config.ts
 
 # ドキュメントファイル（課題提出時は除外）
+FEATURES.md
 AUTH_IMPLEMENTATION.md
 CAMERA_PERMISSION_GUIDE.md
 DEBUG_STEPS.md

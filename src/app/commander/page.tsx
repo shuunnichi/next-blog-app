@@ -220,8 +220,7 @@ export default function CommanderPage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, selectedDevice]);
-  // 写真削除
+  }, [autoRefresh, selectedDevice]);  // 写真削除
   const deletePhoto = async (photoId: string) => {
     try {
       setIsDeleting(true); // ⭐ 削除開始
@@ -239,6 +238,14 @@ export default function CommanderPage() {
       // 写真一覧を再取得
       if (selectedDevice) {
         await fetchPhotos(selectedDevice);
+        
+        // ⭐ 削除後にインデックスを調整
+        setCurrentPhotoIndex((prevIndex) => {
+          const newLength = photos.length - 1; // 1枚削除されるので
+          if (newLength === 0) return 0;
+          if (prevIndex >= newLength) return newLength - 1;
+          return prevIndex;
+        });
       }
       
       setShowDeleteConfirm(false);
@@ -501,8 +508,7 @@ export default function CommanderPage() {
                   </svg>
                   <p className="text-lg font-light">まだ写真がありません</p>
                   <p className="text-sm mt-2 text-white/30">撮影指令を送信してください</p>
-                </div>
-              ) : (
+                </div>              ) : (
                 <div className="relative">
                   {/* メイン写真表示エリア */}
                   <div
@@ -513,12 +519,14 @@ export default function CommanderPage() {
                     onKeyDown={handleKeyDown}
                     tabIndex={0}
                   >
-                    <img
-                      src={photos[currentPhotoIndex].url}
-                      alt={photos[currentPhotoIndex].fileName}
-                      className="w-full h-full object-contain transition-opacity duration-300"
-                      draggable={false}
-                    />
+                    {photos[currentPhotoIndex] && (
+                      <img
+                        src={photos[currentPhotoIndex].url}
+                        alt={photos[currentPhotoIndex].fileName}
+                        className="w-full h-full object-contain transition-opacity duration-300"
+                        draggable={false}
+                      />
+                    )}
                     
                     {/* ナビゲーション矢印（PC用） */}
                     {currentPhotoIndex > 0 && (
@@ -551,37 +559,37 @@ export default function CommanderPage() {
                       </div>
                     )}
                   </div>                  {/* 写真情報 */}
-                  <div className="p-4 md:p-5 bg-white/5 border-b border-white/10">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white/80 font-mono truncate">
-                          {photos[currentPhotoIndex].fileName}
-                        </p>
-                        <p className="text-xs text-white/50 mt-1 font-light">
-                          {new Date(photos[currentPhotoIndex].createdAt).toLocaleString("ja-JP", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit"
-                          })}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setPhotoToDelete(photos[currentPhotoIndex].id);
-                          setShowDeleteConfirm(true);
-                        }}
-                        className="flex-shrink-0 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 p-2 rounded-lg transition-all duration-200"
-                        title="この写真を削除"
-                      >
-                        <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                  {photos[currentPhotoIndex] && (
+                    <div className="p-4 md:p-5 bg-white/5 border-b border-white/10">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white/80 font-mono truncate">
+                            {photos[currentPhotoIndex].fileName}
+                          </p>
+                          <p className="text-xs text-white/50 mt-1 font-light">
+                            {new Date(photos[currentPhotoIndex].createdAt).toLocaleString("ja-JP", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit"
+                            })}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setPhotoToDelete(photos[currentPhotoIndex].id);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="flex-shrink-0 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 p-2.5 rounded-lg transition-all duration-200"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* サムネイル一覧（横スクロール） */}
                   <div className="p-3 md:p-4 overflow-x-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
