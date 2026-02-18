@@ -18,6 +18,7 @@ export default function AgentPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isCameraReadyRef = useRef<boolean>(false);
   const deviceIdRef = useRef<string>("");
+  const isCapturingRef = useRef<boolean>(false); // ⭐ Ref版追加（重要）
   
   const [deviceId, setDeviceId] = useState<string>("");
   const [deviceName, setDeviceName] = useState<string>("");
@@ -93,14 +94,21 @@ export default function AgentPage() {
     
     const interval = setInterval(async () => {
       try {
+        // ⭐ Refで即座にチェック（State更新を待たない）
+        if (isCapturingRef.current) {
+          console.log("⏭️ 撮影中のためスキップ");
+          return;
+        }
+        
         const response = await fetch(`/api/control/${deviceId}`);
         if (!response.ok) return;
         const data = await response.json();
         
-        // 撮影中でない場合のみ実行
-        if (data.shouldCapture && !isCapturing) {
+        // ⭐ 二重チェック: Refとdataの両方
+        if (data.shouldCapture && !isCapturingRef.current) {
           console.log("🎯 撮影指令を受信しました");
-          setIsCapturing(true); // 撮影中フラグをセット
+          isCapturingRef.current = true; // ⭐ 即座にフラグセット
+          setIsCapturing(true);
           setStatus("📸 撮影準備中");
           
           // まず shouldCapture をリセット（次のポーリングで再実行されないように）
@@ -115,7 +123,8 @@ export default function AgentPage() {
         }
       } catch (error) {
         console.error("ポーリングエラー:", error);
-        setIsCapturing(false); // エラー時はフラグをリセット
+        isCapturingRef.current = false; // ⭐ Refもリセット
+        setIsCapturing(false);
       }
     }, 2000);
 
@@ -236,10 +245,10 @@ export default function AgentPage() {
     } catch (error) {
       console.error("アップロードエラー:", error);
       setStatus("❌ 失敗");
-      setTimeout(() => setStatus("待機中"), 3000);
-    } finally {
+      setTimeout(() => setStatus("待機中"), 3000);    } finally {
       setIsUploading(false);
-      setIsCapturing(false); // 撮影完了フラグをリセット
+      setIsCapturing(false); // State版をリセット
+      isCapturingRef.current = false; // ⭐ Ref版もリセット
     }
   };
 
@@ -421,9 +430,7 @@ export default function AgentPage() {
                 <div className="w-20 h-20 rounded-full border-4 border-white bg-transparent hover:bg-white/10 transition flex items-center justify-center">
                   <div className="w-16 h-16 rounded-full bg-white"></div>
                 </div>
-              </button>
-
-              <button
+              </button>              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log("⬅️ BACK BUTTON CLICKED!");
