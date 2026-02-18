@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
-import type { Post } from "@/generated/prisma/client";
+import type { Post } from "@prisma/client";
 import { supabase } from "@/utils/supabase"; 
 
 export const revalidate = 0; // ◀ サーバサイドのキャッシュを無効化する設定

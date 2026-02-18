@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
-import { Category } from "@/generated/prisma/client";
+import { Category } from "@prisma/client";
 import { supabase } from "@/utils/supabase";
 
 type RequestBody = {
