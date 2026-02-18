@@ -45,3 +45,13 @@ next-env.d.ts
 
 # prisma config (if using Prisma 7+, uncomment if needed)
 # prisma.config.ts
+
+# ドキュメントファイル（課題提出時は除外）
+AUTH_IMPLEMENTATION.md
+CAMERA_PERMISSION_GUIDE.md
+DEBUG_STEPS.md
+HYBRID_AUTH.md
+RECOVERY.md
+VERCEL_DEBUG_GUIDE.md
+VERCEL_DEPLOY.md
+temp-backup.ts

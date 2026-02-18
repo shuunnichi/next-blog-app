@@ -26,12 +26,15 @@ export default function CommanderPage() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const galleryRef = useRef<HTMLDivElement>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [showDeviceDeleteConfirm, setShowDeviceDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // ⭐ 削除中フラグ追加
+  const [isDeletingDevice, setIsDeletingDevice] = useState(false); // ⭐ デバイス削除中フラグ追加
 
   // デバイス一覧取得（アクティブ判定付き）
   const fetchDevices = async () => {
@@ -218,10 +221,10 @@ export default function CommanderPage() {
 
     return () => clearInterval(interval);
   }, [autoRefresh, selectedDevice]);
-
   // 写真削除
   const deletePhoto = async (photoId: string) => {
     try {
+      setIsDeleting(true); // ⭐ 削除開始
       console.log("Deleting photo:", photoId);
       const response = await fetch(`/api/photos/${photoId}`, {
         method: "DELETE",
@@ -243,14 +246,16 @@ export default function CommanderPage() {
     } catch (error) {
       console.error("写真削除エラー:", error);
       alert("写真の削除に失敗しました");
+    } finally {
+      setIsDeleting(false); // ⭐ 削除終了
     }
   };
-
   // デバイス削除
   const deleteDevice = async () => {
     if (!selectedDevice) return;
 
     try {
+      setIsDeletingDevice(true); // ⭐ 削除開始
       console.log("Deleting device:", selectedDevice);
       const response = await fetch(`/api/devices?deviceId=${selectedDevice}`, {
         method: "DELETE",
@@ -272,6 +277,8 @@ export default function CommanderPage() {
     } catch (error) {
       console.error("デバイス削除エラー:", error);
       alert("デバイスの削除に失敗しました");
+    } finally {
+      setIsDeletingDevice(false); // ⭐ 削除終了
     }
   };
 
@@ -617,22 +624,33 @@ export default function CommanderPage() {
               </div>
               <h3 className="text-xl font-light mb-2">写真を削除しますか？</h3>
               <p className="text-sm text-white/60">この操作は取り消せません</p>
-            </div>
-            <div className="flex gap-3">
+            </div>            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setPhotoToDelete(null);
                 }}
-                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
+                disabled={isDeleting}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 キャンセル
               </button>
               <button
                 onClick={() => photoToDelete && deletePhoto(photoToDelete)}
-                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200"
+                disabled={isDeleting}
+                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                削除する
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    削除中...
+                  </>
+                ) : (
+                  "削除する"
+                )}
               </button>
             </div>
           </div>
@@ -654,19 +672,29 @@ export default function CommanderPage() {
               {photos.length > 0 && (
                 <p className="text-sm text-red-400 font-medium">{photos.length}枚の写真が削除されます</p>
               )}
-            </div>
-            <div className="flex gap-3">
+            </div>            <div className="flex gap-3">
               <button
                 onClick={() => setShowDeviceDeleteConfirm(false)}
-                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
+                disabled={isDeletingDevice}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 キャンセル
               </button>
               <button
                 onClick={deleteDevice}
-                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200"
+                disabled={isDeletingDevice}
+                className="flex-1 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                削除する
+                {isDeletingDevice ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    削除中...
+                  </>                ) : (
+                  "削除する"
+                )}
               </button>
             </div>
           </div>
