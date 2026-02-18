@@ -134,19 +134,17 @@ export default function CommanderPage() {
         const errorText = await response.text();
         console.error("Failed to send command:", response.status, errorText);
         throw new Error("Failed to send command");
-      }
-
-      const result = await response.json();
+      }      const result = await response.json();
       console.log("Capture command result:", result);
       console.log("=== sendCaptureCommand END ===");
 
-      // 3秒後に写真を再取得
-      console.log("Waiting 3 seconds before fetching photos...");
+      // 5秒後に写真を再取得（アップロード完了を待つ）
+      console.log("Waiting 5 seconds before fetching photos...");
       setTimeout(() => {
         console.log("Now fetching photos after capture...");
         fetchPhotos(selectedDevice);
         setIsCapturing(false);
-      }, 3000);
+      }, 5000);
     } catch (error) {
       console.error("指令送信エラー:", error);
       if (error instanceof Error) {

@@ -29,10 +29,10 @@ export default function AgentPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
-  const [newDeviceName, setNewDeviceName] = useState("");
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);  const [newDeviceName, setNewDeviceName] = useState("");
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false); // 撮影中フラグ追加
 
   const updateDeviceId = (id: string) => {
     setDeviceId(id);
@@ -87,7 +87,6 @@ export default function AgentPage() {
   useEffect(() => {
     console.log("📸 Photos state changed! New count:", photos.length);
   }, [photos]);
-
   // ポーリング用useEffect
   useEffect(() => {
     if (!deviceId || !isRegistered || !isPollingEnabled) return;
@@ -97,22 +96,31 @@ export default function AgentPage() {
         const response = await fetch(`/api/control/${deviceId}`);
         if (!response.ok) return;
         const data = await response.json();
-        if (data.shouldCapture) {
-          setStatus("📸 撮影中");
-          await capturePhoto();
+        
+        // 撮影中でない場合のみ実行
+        if (data.shouldCapture && !isCapturing) {
+          console.log("🎯 撮影指令を受信しました");
+          setIsCapturing(true); // 撮影中フラグをセット
+          setStatus("📸 撮影準備中");
+          
+          // まず shouldCapture をリセット（次のポーリングで再実行されないように）
           await fetch(`/api/control/${deviceId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ shouldCapture: false }),
           });
+          
+          // 撮影実行
+          await capturePhoto();
         }
       } catch (error) {
         console.error("ポーリングエラー:", error);
+        setIsCapturing(false); // エラー時はフラグをリセット
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [deviceId, isRegistered, isPollingEnabled]);
+  }, [deviceId, isRegistered, isPollingEnabled, isCapturing]);
 
   const startCamera = async () => {
     try {
@@ -198,7 +206,6 @@ export default function AgentPage() {
       await uploadPhoto(blob);
     }, "image/jpeg", 0.9);
   };
-
   const uploadPhoto = async (blob: Blob) => {
     if (!deviceIdRef.current) return;
     const fileName = `${deviceIdRef.current}_${Date.now()}.jpg`;
@@ -209,19 +216,30 @@ export default function AgentPage() {
     try {
       setIsUploading(true);
       setStatus("☁️ アップロード中");
+      console.log("📤 アップロード開始:", fileName);
+      
       const response = await fetch("/api/photos", {
         method: "POST",
         body: formData,
       });
-      if (!response.ok) throw new Error("アップロード失敗");
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("アップロード失敗:", response.status, errorText);
+        throw new Error("アップロード失敗");
+      }
+      
+      console.log("✅ アップロード成功:", fileName);
       setStatus("✅ 完了");
       await fetchPhotos(deviceIdRef.current);
       setTimeout(() => setStatus("待機中"), 2000);
     } catch (error) {
       console.error("アップロードエラー:", error);
       setStatus("❌ 失敗");
+      setTimeout(() => setStatus("待機中"), 3000);
     } finally {
       setIsUploading(false);
+      setIsCapturing(false); // 撮影完了フラグをリセット
     }
   };
 
@@ -388,15 +406,16 @@ export default function AgentPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 )}
-              </button>
-
-              <button
+              </button>              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   console.log("📸 SHUTTER BUTTON CLICKED!");
-                  capturePhoto();
+                  if (!isCapturing) {
+                    setIsCapturing(true);
+                    capturePhoto();
+                  }
                 }}
-                disabled={!isCameraReady || !!cameraError}
+                disabled={!isCameraReady || !!cameraError || isCapturing}
                 className="relative disabled:opacity-30 transition active:scale-95 z-20"
               >
                 <div className="w-20 h-20 rounded-full border-4 border-white bg-transparent hover:bg-white/10 transition flex items-center justify-center">
