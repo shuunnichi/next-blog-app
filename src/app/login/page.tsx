@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope, faKey } from "@fortawesome/free-solid-svg-icons";
 import { twMerge } from "tailwind-merge";
 import ValidationAlert from "../_components/ValidationAlert";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 
 const Page: React.FC = () => {
@@ -45,7 +45,7 @@ const Page: React.FC = () => {
         return;
       }
       console.log("ログイン処理に成功しました。");
-      router.replace("/admin");
+      router.replace("/mode-select"); // AdminからMode-selectに変更
     } catch (error) {
       setLoginError("ログイン処理中に予期せぬエラーが発生しました。");
       console.error(JSON.stringify(error, null, 2));

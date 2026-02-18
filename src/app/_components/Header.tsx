@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFish } from "@fortawesome/free-solid-svg-icons";
-import { supabase } from "@/utils/supabase"; // ◀ 追加
-import { useAuth } from "@/app/_hooks/useAuth"; // ◀ 追加
-import { useRouter } from "next/navigation"; // ◀ 追加
+import { faCamera } from "@fortawesome/free-solid-svg-icons";
+import { supabase } from "@/lib/supabase-client";
+import { useAuth } from "@/app/_hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 const Header: React.FC = () => {
   // ▼ 追加
@@ -29,8 +29,8 @@ const Header: React.FC = () => {
         >
           <div>
             <Link href="/">
-              <FontAwesomeIcon icon={faFish} className="mr-1" />
-              MyBlogApp
+              <FontAwesomeIcon icon={faCamera} className="mr-1" />
+              SilentEye
             </Link>
           </div>
           <div className="flex gap-x-6">

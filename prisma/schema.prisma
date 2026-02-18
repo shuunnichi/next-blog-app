@@ -44,3 +44,38 @@ model PostCategory {
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SilentEye: 無音監視カメラシステム
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// デバイス（スマホ）管理
+model Device {
+  id        String   @id @default(uuid())
+  userId    String   // Supabase Auth の user_id
+  name      String   // "My iPhone"
+  deviceId  String   @unique // "smartphone-001"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  photos    Photo[]
+  control   DeviceControl?
+}
+
+// 撮影された写真
+model Photo {
+  id        String   @id @default(uuid())
+  deviceId  String
+  fileName  String   // Supabase Storage のファイル名
+  url       String   // 公開URL
+  createdAt DateTime @default(now())
+  device    Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+}
+
+// リモート制御（撮影指令）
+model DeviceControl {
+  id            String   @id @default(uuid())
+  deviceId      String   @unique
+  shouldCapture Boolean  @default(false) // true = 撮影指令
+  updatedAt     DateTime @updatedAt
+  device        Device   @relation(fields: [deviceId], references: [deviceId], onDelete: Cascade)
+}

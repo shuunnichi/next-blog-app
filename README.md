@@ -1,24 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔇 SilentEye - 無音監視カメラシステム
+
+Next.js + Supabase で構築されたリアルタイム遠隔カメラシステム
+
+## 概要
+
+SilentEye は、スマートフォンを無音カメラとして遠隔操作できるシステムです。
+- **Agent モード**: スマホ側で動作し、遠隔指示を受けて撮影
+- **Commander モード**: PC側で動作し、デバイスを選択して撮影指令を送信
+
+## 技術スタック
+
+- **Frontend**: Next.js 15 (App Router)
+- **Database**: Supabase PostgreSQL
+- **Storage**: Supabase Storage
+- **ORM**: Prisma 5.22.0
+- **Styling**: Tailwind CSS
 
 ## Getting Started
 
-First, run the development server:
+まず、開発サーバーを起動します:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 主要機能
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- 📱 **Agent**: カメラ撮影、デバイス登録、設定管理
+- 💻 **Commander**: デバイス選択、撮影指令、写真ギャラリー
+- 🔄 **リアルタイム通信**: 2秒ごとのポーリングで即座に反映
+- 💾 **永続化**: localStorage でデバイス情報を保存
+- 🗑️ **管理機能**: 全写真削除、空デバイス削除
 
 ## Learn More
 

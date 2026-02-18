@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/lib/supabase-client";
 
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
