@@ -1,0 +1,30 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 毎日午前9時（UTC 0:00 = JST 9:00）に実行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping API to keep Supabase active
+        run: |
+          echo "Pinging API to prevent Supabase from pausing..."
+          
+          # デバイス一覧を取得（軽量なエンドポイント）
+          curl -X GET "${{ secrets.VERCEL_URL }}/api/devices" \
+            -H "Content-Type: application/json" \
+            -w "\nHTTP Status: %{http_code}\n" \
+            --max-time 30 \
+            --retry 3
+          
+          echo "Ping completed successfully!"
+      
+      - name: Log completion
+        run: |
+          echo "Keep-alive job completed at $(date)"
+          echo "Next run: Tomorrow at 9:00 AM JST"
