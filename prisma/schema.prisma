@@ -55,6 +55,7 @@ model Device {
   userId    String   // Supabase Auth の user_id
   name      String   // "My iPhone"
   deviceId  String   @unique // "smartphone-001"
+  password  String?  // 任意のパスワード（nullの場合はパスワード保護なし）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   photos    Photo[]

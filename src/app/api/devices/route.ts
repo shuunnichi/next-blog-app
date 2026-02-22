@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     const userId = user?.id || "anonymous";
 
-    const { name } = await request.json();
+    const { name, password } = await request.json();
 
     if (!name || typeof name !== "string") {
       return NextResponse.json(
@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ユニークなデバイスIDを生成
-    const deviceId = `device-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    // ユニークなデバイスIDを生成（完全ランダム化）
+    const deviceId = crypto.randomUUID();
 
     // デバイス作成
     const device = await prisma.device.create({
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         userId,
         name,
         deviceId,
+        password: password || null, // パスワードがあれば保存
       },
     });
 

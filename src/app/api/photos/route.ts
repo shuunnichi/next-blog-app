@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get("deviceId");
+    const password = searchParams.get("password");
     
     console.log("=== GET /api/photos ===");
     console.log("deviceId:", deviceId);
@@ -25,20 +26,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "deviceId is required" }, { status: 400 });
     }
 
-    // デバイスの所有者を確認（認証がある場合のみ）
-    if (user) {
-      const device = await prisma.device.findFirst({
-        where: { 
-          deviceId,
-          userId: user.id
-        }
-      });
+    // ⚡ デバイス情報を取得
+    const device = await prisma.device.findFirst({
+      where: { deviceId }
+    }) as { id: string; deviceId: string; userId: string; name: string; password: string | null; createdAt: Date; updatedAt: Date } | null;
 
-      console.log("Device check (authenticated):", device);
+    if (!device) {
+      return NextResponse.json({ error: "Device not found" }, { status: 404 });
+    }
 
-      if (!device) {
-        return NextResponse.json({ error: "Device not found or unauthorized" }, { status: 404 });
+    // ⚡ パスワードチェック
+    if (device.password) {
+      // パスワードが設定されている場合
+      if (!password || password !== device.password) {
+        return NextResponse.json({ error: "Password required" }, { status: 403 });
       }
+    }
+
+    // 認証がある場合は所有者チェック
+    if (user && device.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const photos = await prisma.photo.findMany({

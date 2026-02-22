@@ -33,8 +33,13 @@ export default function CommanderPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [showDeviceDeleteConfirm, setShowDeviceDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false); // ⭐ 削除中フラグ追加
-  const [isDeletingDevice, setIsDeletingDevice] = useState(false); // ⭐ デバイス削除中フラグ追加
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingDevice, setIsDeletingDevice] = useState(false);
+  
+  // ⚡ パスワード機能
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [pendingDeviceId, setPendingDeviceId] = useState<string>("");
 
   // デバイス一覧取得（アクティブ判定付き）
   const fetchDevices = async () => {
@@ -75,17 +80,23 @@ export default function CommanderPage() {
   };
 
   // 写真一覧取得
-  const fetchPhotos = async (deviceId: string) => {
+  const fetchPhotos = async (deviceId: string, password?: string) => {
     try {
       console.log("=== fetchPhotos START ===");
       console.log("deviceId:", deviceId);
       
-      const url = `/api/photos?deviceId=${deviceId}`;
+      const url = `/api/photos?deviceId=${deviceId}${password ? `&password=${encodeURIComponent(password)}` : ''}`;
       console.log("Request URL:", url);
       
       const response = await fetch(url);
       console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      
+      if (response.status === 403) {
+        // パスワードが必要
+        setPendingDeviceId(deviceId);
+        setShowPasswordDialog(true);
+        return;
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -95,18 +106,22 @@ export default function CommanderPage() {
       
       const data = await response.json();
       console.log("Photos received:", data);
-      console.log("Photos count:", data.length);
-      console.log("First photo (if any):", data[0]);
-      
       setPhotos(data);
       console.log("=== fetchPhotos END ===");
     } catch (error) {
       console.error("写真取得エラー:", error);
-      if (error instanceof Error) {
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
     }
+  };
+
+  // ⚡ パスワード検証
+  const handlePasswordSubmit = async () => {
+    if (!pendingDeviceId) return;
+    
+    await fetchPhotos(pendingDeviceId, passwordInput);
+    setSelectedDevice(pendingDeviceId);
+    setShowPasswordDialog(false);
+    setPasswordInput("");
+    setPendingDeviceId("");
   };
 
   // 撮影指令送信
@@ -372,14 +387,21 @@ export default function CommanderPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
                 <h2 className="text-lg font-light">コントロール</h2>
-              </div>{/* デバイス選択 */}
-              <div className="mb-6">
+              </div>{/* デバイス選択 */}              <div className="mb-6">
                 <label className="block text-sm text-white/60 mb-2 font-light">
                   デバイス選択
                 </label>
                 <select
                   value={selectedDevice}
-                  onChange={(e) => setSelectedDevice(e.target.value)}
+                  onChange={(e) => {
+                    const deviceId = e.target.value;
+                    if (deviceId) {
+                      fetchPhotos(deviceId); // パスワードチェック付き
+                    } else {
+                      setSelectedDevice("");
+                      setPhotos([]);
+                    }
+                  }}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
                 >                  <option value="" className="bg-black">-- 選択してください --</option>
                   
@@ -496,7 +518,7 @@ export default function CommanderPage() {
               {!selectedDevice ? (
                 <div className="text-center py-24 text-white/40">
                   <svg className="w-16 h-16 mx-auto mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 00-2 2z" />
                   </svg>
                   <p className="text-lg font-light">デバイスを選択してください</p>
                 </div>
@@ -703,6 +725,56 @@ export default function CommanderPage() {
                   </>                ) : (
                   "削除する"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ⚡ パスワード入力モーダル */}
+      {showPasswordDialog && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={() => setShowPasswordDialog(false)}>
+          <div className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium mb-2">パスワードが必要です</h3>
+              <p className="text-sm text-white/60">このデバイスはパスワードで保護されています</p>
+            </div>
+            
+            <input
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handlePasswordSubmit();
+                }
+              }}
+              placeholder="パスワードを入力"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
+              autoFocus
+            />
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPasswordDialog(false);
+                  setPasswordInput("");
+                  setPendingDeviceId("");
+                }}
+                className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-xl font-medium transition-all duration-200"
+              >
+                確認
               </button>
             </div>
           </div>
