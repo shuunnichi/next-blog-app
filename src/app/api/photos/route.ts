@@ -37,17 +37,27 @@ export async function GET(request: NextRequest) {
 
     // ⚡ 所有者確認（所有者であればパスワード不要）
     const isOwner = device.userId === userId;
+    
+    console.log("=== OWNERSHIP CHECK ===");
+    console.log("device.userId:", device.userId);
+    console.log("userId:", userId);
+    console.log("isOwner:", isOwner);
+    console.log("device.password:", device.password ? "[SET]" : "[NOT SET]");
 
     // ⚡ パスワードチェック（所有者以外の場合のみ）
     if (!isOwner && device.password) {
       // パスワードが設定されている場合
+      console.log("Password check: not owner and password set");
       if (!password || password !== device.password) {
+        console.log("Password check: FAILED");
         return NextResponse.json({ error: "Password required" }, { status: 403 });
       }
+      console.log("Password check: PASSED");
     }
 
     // 認証がある場合は、所有者でもパスワードもない場合は拒否
     if (user && !isOwner && !device.password) {
+      console.log("Authorization check: user exists, not owner, no password - REJECTED");
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

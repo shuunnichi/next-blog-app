@@ -228,25 +228,8 @@ export default function CommanderPage() {
     if (e.key === "ArrowLeft" && currentPhotoIndex > 0) {
       setCurrentPhotoIndex(currentPhotoIndex - 1);
     } else if (e.key === "ArrowRight" && currentPhotoIndex < photos.length - 1) {
-      setCurrentPhotoIndex(currentPhotoIndex + 1);
-    }
+      setCurrentPhotoIndex(currentPhotoIndex + 1);    }
   };
-  // 初回ロード
-  useEffect(() => {
-    fetchDevices();
-  }, []);
-
-  // デバイス選択時 - パスワードチェックのみ（写真取得は手動で行う）
-  useEffect(() => {
-    if (selectedDevice) {
-      setCurrentPhotoIndex(0); // 写真インデックスをリセット
-      // パスワードチェック
-      checkPasswordRequired(selectedDevice);
-    } else {
-      // デバイス未選択の場合は写真をクリア
-      setPhotos([]);
-    }
-  }, [selectedDevice]);
 
   // パスワードが必要かチェック
   const checkPasswordRequired = async (deviceId: string) => {
@@ -268,6 +251,23 @@ export default function CommanderPage() {
       console.error("Error checking password:", error);
     }
   };
+
+  // 初回ロード
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  // デバイス選択時 - パスワードチェックのみ（写真取得は手動で行う）
+  useEffect(() => {
+    if (selectedDevice) {
+      setCurrentPhotoIndex(0); // 写真インデックスをリセット
+      // パスワードチェック
+      checkPasswordRequired(selectedDevice);
+    } else {
+      // デバイス未選択の場合は写真をクリア
+      setPhotos([]);
+    }
+  }, [selectedDevice]);
 
   // 写真が更新されたら最新の写真を表示
   useEffect(() => {
