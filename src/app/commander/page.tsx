@@ -733,32 +733,24 @@ export default function CommanderPage() {
 
       {/* ⚡ パスワード入力モーダル */}
       {showPasswordDialog && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" onClick={() => setShowPasswordDialog(false)}>
-          <div className="bg-gradient-to-br from-gray-900 to-black border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-medium mb-2">パスワードが必要です</h3>
-              <p className="text-sm text-white/60">このデバイスはパスワードで保護されています</p>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-md w-full backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-6">
+              <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <h2 className="text-xl font-light">パスワード入力</h2>
             </div>
-            
+            <p className="text-sm text-white/60 mb-4">このデバイスはパスワードで保護されています</p>
             <input
               type="password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handlePasswordSubmit();
-                }
-              }}
+              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
               placeholder="パスワードを入力"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-yellow-400/50"
               autoFocus
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 font-light placeholder:text-white/30"
             />
-            
             <div className="flex gap-3">
               <button
                 onClick={() => {
@@ -772,7 +764,7 @@ export default function CommanderPage() {
               </button>
               <button
                 onClick={handlePasswordSubmit}
-                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black py-3 rounded-xl font-medium transition-all duration-200"
+                className="flex-1 bg-white text-black hover:bg-white/90 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg"
               >
                 確認
               </button>

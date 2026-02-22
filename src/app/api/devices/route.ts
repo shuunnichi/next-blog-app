@@ -44,16 +44,14 @@ export async function POST(request: NextRequest) {
     }
 
     // ユニークなデバイスIDを生成（完全ランダム化）
-    const deviceId = crypto.randomUUID();
-
-    // デバイス作成
+    const deviceId = crypto.randomUUID();    // デバイス作成
     const device = await prisma.device.create({
       data: {
         userId,
         name,
         deviceId,
         password: password || null, // パスワードがあれば保存
-      },
+      } as any, // 型キャッシュ問題のため一時的にanyを使用
     });
 
     // コントロールレコードも作成
@@ -73,21 +71,29 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// デバイス名変更
+// デバイス名・パスワード変更
 export async function PUT(request: NextRequest) {
   try {
-    const { deviceId, name } = await request.json();
+    const { deviceId, name, password } = await request.json();
 
-    if (!deviceId || !name) {
+    if (!deviceId) {
       return NextResponse.json(
-        { error: "deviceId and name are required" },
+        { error: "deviceId is required" },
         { status: 400 }
       );
     }
 
+    // 更新データを構築
+    const updateData: { name?: string; password?: string | null } = {};
+    if (name) updateData.name = name;
+    if (password !== undefined) {
+      // passwordが空文字列ならnull、それ以外はそのまま
+      updateData.password = password === "" ? null : password;
+    }
+
     const device = await prisma.device.update({
       where: { deviceId },
-      data: { name },
+      data: updateData,
     });
 
     return NextResponse.json(device);

@@ -30,8 +30,9 @@ export default function AgentPage() {
   const [status, setStatus] = useState("待機中");
   const [showSettings, setShowSettings] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
-  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);  const [newDeviceName, setNewDeviceName] = useState("");
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);  
+  const [newDeviceName, setNewDeviceName] = useState("");
+  const [newDevicePassword, setNewDevicePassword] = useState(""); // ⚡ パスワード変更用
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false); // 撮影中フラグ追加
@@ -182,8 +183,18 @@ export default function AgentPage() {
           password: devicePassword || undefined // パスワードがあれば送信
         }),
       });
-      if (!response.ok) throw new Error("登録失敗");
+      
+      console.log("Registration response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Registration failed:", response.status, errorText);
+        throw new Error(`登録失敗: ${response.status} - ${errorText}`);
+      }
+      
       const data = await response.json();
+      console.log("Registration successful:", data);
+      
       updateDeviceId(data.deviceId);
       setIsRegistered(true);
       localStorage.setItem("silentEye_deviceId", data.deviceId);
@@ -192,7 +203,7 @@ export default function AgentPage() {
       await fetchPhotos(data.deviceId);
     } catch (error) {
       console.error("登録エラー:", error);
-      alert("デバイス登録に失敗しました");
+      alert(`デバイス登録に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
 
@@ -264,21 +275,26 @@ export default function AgentPage() {
     }
     window.location.reload();
   };
-
   const handleChangeDeviceName = async () => {
     if (!newDeviceName.trim()) return;
     try {
       const response = await fetch(`/api/devices`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId, name: newDeviceName }),
+        body: JSON.stringify({ 
+          deviceId, 
+          name: newDeviceName,
+          password: newDevicePassword // パスワードも送信（空文字列の場合は削除される）
+        }),
       });
       if (!response.ok) throw new Error("変更失敗");
       setDeviceName(newDeviceName);
+      setDevicePassword(newDevicePassword); // ローカルステートも更新
       localStorage.setItem("silentEye_deviceName", newDeviceName);
       setShowSettings(false);
+      alert("設定を更新しました");
     } catch (error) {
-      alert("デバイス名の変更に失敗しました");
+      alert("設定の変更に失敗しました");
     }
   };
 
@@ -383,10 +399,10 @@ export default function AgentPage() {
                   <p className="text-xs text-white/60 font-light">{deviceName}</p>
                 </div>
                 <p className="text-sm font-light">{status}</p>
-              </div>
-              <button
+              </div>              <button
                 onClick={() => {
                   setNewDeviceName(deviceName);
+                  setNewDevicePassword(devicePassword); // 現在のパスワードをセット
                   setShowSettings(true);
                 }}
                 className="bg-white/10 hover:bg-white/20 backdrop-blur-sm p-3 rounded-xl transition-all duration-200 border border-white/10"
@@ -466,14 +482,21 @@ export default function AgentPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <h2 className="text-xl font-light">設定</h2>
-            </div>
-            <div className="mb-4">
+            </div>            <div className="mb-4">
               <label className="block text-sm text-white/60 mb-2 font-light">デバイス名変更</label>
               <input
                 type="text"
                 value={newDeviceName}
                 onChange={(e) => setNewDeviceName(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 font-light"
+              />
+              <label className="block text-sm text-white/60 mb-2 font-light">パスワード変更（任意）</label>
+              <input
+                type="password"
+                value={newDevicePassword}
+                onChange={(e) => setNewDevicePassword(e.target.value)}
+                placeholder="空欄でパスワード削除"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 font-light placeholder:text-white/30"
               />
               <button
                 onClick={handleChangeDeviceName}
