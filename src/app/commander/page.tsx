@@ -482,9 +482,35 @@ export default function CommanderPage() {
                         </option>
                       ))}
                     </optgroup>
-                  )}
-                </select>
-              </div>{/* 撮影ボタン */}
+                  )}                </select>
+              </div>
+
+              {/* 選択中のデバイス情報 */}
+              {selectedDevice && (() => {
+                const device = [...activeDevices, ...inactiveDevices].find(d => d.deviceId === selectedDevice);
+                if (!device) return null;
+                const lastUpdate = new Date(device.updatedAt || device.createdAt);
+                const now = new Date();
+                const diffMs = now.getTime() - lastUpdate.getTime();
+                const diffMins = Math.floor(diffMs / 60000);
+                const isOnline = diffMins < 5;
+                
+                return (
+                  <div className="mb-6 p-3 bg-white/5 border border-white/10 rounded-xl">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-400' : 'bg-white/30'}`}></div>
+                        <span className="text-white/60">最終更新</span>
+                      </div>
+                      <span className="text-white/80 font-mono">
+                        {diffMins < 1 ? '今' : diffMins < 60 ? `${diffMins}分前` : `${Math.floor(diffMins / 60)}時間前`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 撮影ボタン */}
               <button
                 onClick={sendCaptureCommand}
                 disabled={!selectedDevice || isCapturing}
