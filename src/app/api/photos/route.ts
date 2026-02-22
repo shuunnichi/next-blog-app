@@ -35,16 +35,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Device not found" }, { status: 404 });
     }
 
-    // ⚡ パスワードチェック
-    if (device.password) {
+    // ⚡ 所有者確認（所有者であればパスワード不要）
+    const isOwner = device.userId === userId;
+
+    // ⚡ パスワードチェック（所有者以外の場合のみ）
+    if (!isOwner && device.password) {
       // パスワードが設定されている場合
       if (!password || password !== device.password) {
         return NextResponse.json({ error: "Password required" }, { status: 403 });
       }
     }
 
-    // 認証がある場合は所有者チェック
-    if (user && device.userId !== user.id) {
+    // 認証がある場合は、所有者でもパスワードもない場合は拒否
+    if (user && !isOwner && !device.password) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

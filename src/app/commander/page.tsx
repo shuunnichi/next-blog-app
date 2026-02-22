@@ -35,11 +35,11 @@ export default function CommanderPage() {
   const [showDeviceDeleteConfirm, setShowDeviceDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeletingDevice, setIsDeletingDevice] = useState(false);
-  
-  // ⚡ パスワード機能
+    // ⚡ パスワード機能
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingDeviceId, setPendingDeviceId] = useState<string>("");
+  const [savedPasswords, setSavedPasswords] = useState<Record<string, string>>({});
 
   // デバイス一覧取得（アクティブ判定付き）
   const fetchDevices = async () => {
@@ -78,14 +78,16 @@ export default function CommanderPage() {
       console.error("デバイス取得エラー:", error);
     }
   };
-
   // 写真一覧取得
   const fetchPhotos = async (deviceId: string, password?: string) => {
     try {
       console.log("=== fetchPhotos START ===");
       console.log("deviceId:", deviceId);
       
-      const url = `/api/photos?deviceId=${deviceId}${password ? `&password=${encodeURIComponent(password)}` : ''}`;
+      // 保存されたパスワードがあればそれを使用
+      const passwordToUse = password || savedPasswords[deviceId];
+      
+      const url = `/api/photos?deviceId=${deviceId}${passwordToUse ? `&password=${encodeURIComponent(passwordToUse)}` : ''}`;
       console.log("Request URL:", url);
       
       const response = await fetch(url);
@@ -111,17 +113,41 @@ export default function CommanderPage() {
     } catch (error) {
       console.error("写真取得エラー:", error);
     }
-  };
-
-  // ⚡ パスワード検証
+  };  // ⚡ パスワード検証
   const handlePasswordSubmit = async () => {
     if (!pendingDeviceId) return;
     
-    await fetchPhotos(pendingDeviceId, passwordInput);
-    setSelectedDevice(pendingDeviceId);
-    setShowPasswordDialog(false);
-    setPasswordInput("");
-    setPendingDeviceId("");
+    try {
+      const url = `/api/photos?deviceId=${pendingDeviceId}&password=${encodeURIComponent(passwordInput)}`;
+      const response = await fetch(url);
+      
+      if (response.status === 403) {
+        alert("パスワードが間違っています");
+        return;
+      }
+      
+      if (!response.ok) {
+        alert("写真の取得に失敗しました");
+        return;
+      }
+      
+      const data = await response.json();
+      setPhotos(data);
+      
+      // パスワードを保存（セッション中のみ）
+      setSavedPasswords(prev => ({
+        ...prev,
+        [pendingDeviceId]: passwordInput
+      }));
+      
+      setSelectedDevice(pendingDeviceId);
+      setShowPasswordDialog(false);
+      setPasswordInput("");
+      setPendingDeviceId("");
+    } catch (error) {
+      console.error("パスワード検証エラー:", error);
+      alert("エラーが発生しました");
+    }
   };
 
   // 撮影指令送信
@@ -205,19 +231,43 @@ export default function CommanderPage() {
       setCurrentPhotoIndex(currentPhotoIndex + 1);
     }
   };
-
   // 初回ロード
   useEffect(() => {
     fetchDevices();
   }, []);
 
-  // デバイス選択時
+  // デバイス選択時 - パスワードチェックのみ（写真取得は手動で行う）
   useEffect(() => {
     if (selectedDevice) {
-      fetchPhotos(selectedDevice);
       setCurrentPhotoIndex(0); // 写真インデックスをリセット
+      // パスワードチェック
+      checkPasswordRequired(selectedDevice);
+    } else {
+      // デバイス未選択の場合は写真をクリア
+      setPhotos([]);
     }
   }, [selectedDevice]);
+
+  // パスワードが必要かチェック
+  const checkPasswordRequired = async (deviceId: string) => {
+    try {
+      const response = await fetch(`/api/photos?deviceId=${deviceId}`);
+      
+      if (response.status === 403) {
+        // パスワードが必要
+        setPendingDeviceId(deviceId);
+        setShowPasswordDialog(true);
+      } else if (response.ok) {
+        // パスワード不要 - 写真を取得
+        const data = await response.json();
+        setPhotos(data);
+      } else {
+        console.error("Failed to fetch photos:", response.status);
+      }
+    } catch (error) {
+      console.error("Error checking password:", error);
+    }
+  };
 
   // 写真が更新されたら最新の写真を表示
   useEffect(() => {
