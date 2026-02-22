@@ -441,7 +441,7 @@ export default function AgentPage() {
               </div>              <button
                 onClick={() => {
                   setNewDeviceName(deviceName);
-                  setNewDevicePassword(devicePassword); // 現在のパスワードをセット
+                  setNewDevicePassword(""); // ⭐ 常に空白でスタート
                   setShowSettings(true);
                 }}
                 className="bg-white/10 hover:bg-white/20 backdrop-blur-sm p-3 rounded-xl transition-all duration-200 border border-white/10"
