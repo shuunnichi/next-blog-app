@@ -65,7 +65,7 @@ export async function POST(
     const userId = user?.id || "anonymous";
 
     const { deviceId } = await context.params;
-    const { shouldCapture } = await request.json();
+    const { shouldCapture, password, deviceToken } = await request.json();
 
     console.log("=== POST /api/control/[deviceId] ===");
     console.log("deviceId:", deviceId);
@@ -79,15 +79,36 @@ export async function POST(
       );
     }
 
-    // デバイスの存在確認（所有者チェックは認証がある場合のみ）
+    // デバイスの存在確認
     const device = await prisma.device.findFirst({
-      where: user ? { deviceId, userId: user.id } : { deviceId }
+      where: { deviceId }
     });
 
     console.log("Device found:", device);
 
     if (!device) {
       return NextResponse.json({ error: "Device not found" }, { status: 404 });
+    }
+
+    // 🔒 アクセス権限チェック
+    const isOwnerByToken = deviceToken && device.id === deviceToken;
+    console.log("isOwnerByToken:", isOwnerByToken);
+
+    // パスワードが設定されている場合、deviceTokenまたはパスワードが必要
+    if (device.password) {
+      if (isOwnerByToken) {
+        console.log("Control access: ALLOWED (owner by token)");
+      } else if (!password || password !== device.password) {
+        console.log("Control access: DENIED (password mismatch)");
+        return NextResponse.json(
+          { error: "Password required" },
+          { status: 403 }
+        );
+      } else {
+        console.log("Control access: ALLOWED (password match)");
+      }
+    } else {
+      console.log("Control access: ALLOWED (no password set)");
     }
 
     const control = await prisma.deviceControl.upsert({

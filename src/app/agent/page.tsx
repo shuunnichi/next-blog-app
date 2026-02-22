@@ -41,11 +41,12 @@ export default function AgentPage() {
     setDeviceId(id);
     deviceIdRef.current = id;
   };
-
   const fetchPhotos = async (devId: string) => {
     try {
       console.log("📷 Fetching photos for device:", devId);
-      const response = await fetch(`/api/photos?deviceId=${devId}`);
+      const deviceToken = localStorage.getItem("silentEye_deviceToken");
+      const url = `/api/photos?deviceId=${devId}${deviceToken ? `&deviceToken=${deviceToken}` : ''}`;
+      const response = await fetch(url);
       console.log("📷 Response status:", response.status);
       if (response.ok) {
         const data = await response.json();
@@ -61,16 +62,25 @@ export default function AgentPage() {
       console.error("Failed to fetch photos:", error);
     }
   };
-
   // ⭐ 最優先：初回マウント時の処理
   useEffect(() => {
     console.log("=".repeat(80));
-    console.log("🚀🚀🚀 INITIAL USEEFFECT RUNNING - VERSION 2026-02-18 22:30 🚀🚀🚀");
+    console.log("🚀🚀🚀 INITIAL USEEFFECT RUNNING - VERSION 2026-02-23 🚀🚀🚀");
     console.log("=".repeat(80));
+    
+    // 🔒 アクセス制限: deviceTokenがない場合はリダイレクト
+    const deviceToken = localStorage.getItem("silentEye_deviceToken");
+    if (!deviceToken) {
+      console.log("🚫 No deviceToken found. Redirecting to mode-select...");
+      router.push("/mode-select");
+      return;
+    }
+    
     const savedDeviceId = localStorage.getItem("silentEye_deviceId");
     const savedDeviceName = localStorage.getItem("silentEye_deviceName");
     console.log("🚀 Saved Device ID:", savedDeviceId);
     console.log("🚀 Saved Device Name:", savedDeviceName);
+    console.log("🚀 Device Token:", deviceToken);
 
     if (savedDeviceId && savedDeviceName) {
       console.log("🚀 Initializing device...");
@@ -83,14 +93,16 @@ export default function AgentPage() {
       startCamera();
     } else {
       console.log("❌ No saved device found in localStorage");
+      // deviceTokenはあるが、deviceIdがない場合もリダイレクト
+      console.log("🚫 Incomplete device data. Redirecting to mode-select...");
+      router.push("/mode-select");
     }
-  }, []);
+  }, [router]);
 
   // photosステートの変更を監視
   useEffect(() => {
     console.log("📸 Photos state changed! New count:", photos.length);
-  }, [photos]);
-  // ポーリング用useEffect
+  }, [photos]);  // ポーリング用useEffect
   useEffect(() => {
     if (!deviceId || !isRegistered || !isPollingEnabled) return;
     
@@ -114,10 +126,15 @@ export default function AgentPage() {
           setStatus("📸 撮影準備中");
           
           // まず shouldCapture をリセット（次のポーリングで再実行されないように）
+          // 🔒 deviceTokenを含めて送信
+          const deviceToken = localStorage.getItem("silentEye_deviceToken");
           await fetch(`/api/control/${deviceId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ shouldCapture: false }),
+            body: JSON.stringify({ 
+              shouldCapture: false,
+              deviceToken: deviceToken || undefined
+            }),
           });
           
           // 撮影実行
@@ -164,13 +181,13 @@ export default function AgentPage() {
     try {
       const checkResponse = await fetch("/api/devices");
       if (checkResponse.ok) {
-        const existingDevices = await checkResponse.json();
-        const existingDevice = existingDevices.find((d: any) => d.name === deviceName);
+        const existingDevices = await checkResponse.json();        const existingDevice = existingDevices.find((d: any) => d.name === deviceName);
         if (existingDevice) {
           updateDeviceId(existingDevice.deviceId);
           setIsRegistered(true);
           localStorage.setItem("silentEye_deviceId", existingDevice.deviceId);
           localStorage.setItem("silentEye_deviceName", deviceName);
+          localStorage.setItem("silentEye_deviceToken", existingDevice.id); // デバイストークンを保存
           await startCamera();
           await fetchPhotos(existingDevice.deviceId);
           return;
@@ -191,14 +208,14 @@ export default function AgentPage() {
         console.error("Registration failed:", response.status, errorText);
         throw new Error(`登録失敗: ${response.status} - ${errorText}`);
       }
-      
-      const data = await response.json();
+        const data = await response.json();
       console.log("Registration successful:", data);
       
       updateDeviceId(data.deviceId);
       setIsRegistered(true);
       localStorage.setItem("silentEye_deviceId", data.deviceId);
       localStorage.setItem("silentEye_deviceName", deviceName);
+      localStorage.setItem("silentEye_deviceToken", data.id); // デバイストークンを保存
       await startCamera();
       await fetchPhotos(data.deviceId);
     } catch (error) {

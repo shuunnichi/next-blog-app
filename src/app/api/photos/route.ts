@@ -35,30 +35,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Device not found" }, { status: 404 });
     }
 
-    // ⚡ 所有者確認（所有者であればパスワード不要）
-    const isOwner = device.userId === userId;
+    // ⚡ パスワードチェック
+    // パスワードが設定されている場合は、所有者でも必須
+    // （ただし、deviceTokenがあれば所有者として認識）
+    const deviceToken = searchParams.get("deviceToken");
+    const isOwnerByToken = deviceToken && device.id === deviceToken;
     
     console.log("=== OWNERSHIP CHECK ===");
     console.log("device.userId:", device.userId);
     console.log("userId:", userId);
-    console.log("isOwner:", isOwner);
+    console.log("deviceToken:", deviceToken ? "[PROVIDED]" : "[NOT PROVIDED]");
+    console.log("isOwnerByToken:", isOwnerByToken);
     console.log("device.password:", device.password ? "[SET]" : "[NOT SET]");
 
-    // ⚡ パスワードチェック（所有者以外の場合のみ）
-    if (!isOwner && device.password) {
-      // パスワードが設定されている場合
-      console.log("Password check: not owner and password set");
-      if (!password || password !== device.password) {
+    // パスワードチェック
+    if (device.password) {
+      // デバイストークンがあれば所有者として扱う
+      if (isOwnerByToken) {
+        console.log("Password check: BYPASSED (owner by token)");
+      } else if (!password || password !== device.password) {
         console.log("Password check: FAILED");
         return NextResponse.json({ error: "Password required" }, { status: 403 });
+      } else {
+        console.log("Password check: PASSED");
       }
-      console.log("Password check: PASSED");
     }
 
-    // 認証がある場合は、所有者でもパスワードもない場合は拒否
-    if (user && !isOwner && !device.password) {
-      console.log("Authorization check: user exists, not owner, no password - REJECTED");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    // 認証がある場合の所有者チェック（パスワードがない場合）
+    if (user && !device.password) {
+      const isOwner = device.userId === userId;
+      if (!isOwner) {
+        console.log("Authorization check: not owner - REJECTED");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
     }
 
     const photos = await prisma.photo.findMany({

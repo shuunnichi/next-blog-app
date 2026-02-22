@@ -149,7 +149,6 @@ export default function CommanderPage() {
       alert("エラーが発生しました");
     }
   };
-
   // 撮影指令送信
   const sendCaptureCommand = async () => {
     if (!selectedDevice) {
@@ -163,7 +162,11 @@ export default function CommanderPage() {
       console.log("Selected device:", selectedDevice);
       
       const url = `/api/control/${selectedDevice}`;
-      const body = { shouldCapture: true };
+      // 🔒 パスワードを含めて送信
+      const body = { 
+        shouldCapture: true,
+        password: savedPasswords[selectedDevice] || undefined
+      };
       console.log("Request URL:", url);
       console.log("Request body:", body);
       
@@ -180,7 +183,7 @@ export default function CommanderPage() {
         const errorText = await response.text();
         console.error("Failed to send command:", response.status, errorText);
         throw new Error("Failed to send command");
-      }      const result = await response.json();
+      }const result = await response.json();
       console.log("Capture command result:", result);
       console.log("=== sendCaptureCommand END ===");
 
