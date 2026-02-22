@@ -61,28 +61,22 @@ export default function AgentPage() {
     } catch (error) {
       console.error("Failed to fetch photos:", error);
     }
-  };
-  // ⭐ 最優先：初回マウント時の処理
+  };  // ⭐ 最優先：初回マウント時の処理
   useEffect(() => {
     console.log("=".repeat(80));
-    console.log("🚀🚀🚀 INITIAL USEEFFECT RUNNING - VERSION 2026-02-23 🚀🚀🚀");
+    console.log("🚀🚀🚀 INITIAL USEEFFECT RUNNING - VERSION 2026-02-23 v2 🚀🚀🚀");
     console.log("=".repeat(80));
-    
-    // 🔒 アクセス制限: deviceTokenがない場合はリダイレクト
-    const deviceToken = localStorage.getItem("silentEye_deviceToken");
-    if (!deviceToken) {
-      console.log("🚫 No deviceToken found. Redirecting to mode-select...");
-      router.push("/mode-select");
-      return;
-    }
     
     const savedDeviceId = localStorage.getItem("silentEye_deviceId");
     const savedDeviceName = localStorage.getItem("silentEye_deviceName");
+    const deviceToken = localStorage.getItem("silentEye_deviceToken");
+    
     console.log("🚀 Saved Device ID:", savedDeviceId);
     console.log("🚀 Saved Device Name:", savedDeviceName);
-    console.log("🚀 Device Token:", deviceToken);
+    console.log("🚀 Device Token:", deviceToken ? "[EXISTS]" : "[NOT EXISTS]");
 
     if (savedDeviceId && savedDeviceName) {
+      // デバイス登録済み - 起動する
       console.log("🚀 Initializing device...");
       updateDeviceId(savedDeviceId);
       setDeviceName(savedDeviceName);
@@ -92,10 +86,8 @@ export default function AgentPage() {
       console.log("🚀 Starting camera...");
       startCamera();
     } else {
-      console.log("❌ No saved device found in localStorage");
-      // deviceTokenはあるが、deviceIdがない場合もリダイレクト
-      console.log("🚫 Incomplete device data. Redirecting to mode-select...");
-      router.push("/mode-select");
+      // デバイス未登録 - 登録UIを表示（リダイレクトしない）
+      console.log("❌ No saved device found - showing registration UI");
     }
   }, [router]);
 
