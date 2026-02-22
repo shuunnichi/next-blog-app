@@ -59,13 +59,26 @@ export async function POST(request: NextRequest) {
       data: {
         deviceId: device.deviceId,
       },
-    });
-
-    return NextResponse.json(device, { status: 201 });
+    });    return NextResponse.json(device, { status: 201 });
   } catch (error) {
     console.error("POST /api/devices error:", error);
+    
+    // 詳細なエラー情報を返す
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    console.error("Error details:", {
+      message: errorMessage,
+      stack: errorStack,
+      error: error
+    });
+    
     return NextResponse.json(
-      { error: "Failed to create device" },
+      { 
+        error: "Failed to create device",
+        details: errorMessage,
+        stack: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      },
       { status: 500 }
     );
   }
