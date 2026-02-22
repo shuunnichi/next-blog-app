@@ -324,12 +324,13 @@ export default function AgentPage() {
           name: newDeviceName,
           password: newDevicePassword // パスワードも送信（空文字列の場合は削除される）
         }),
-      });
-      if (!response.ok) throw new Error("変更失敗");
+      });      if (!response.ok) throw new Error("変更失敗");
       setDeviceName(newDeviceName);
       setDevicePassword(newDevicePassword); // ローカルステートも更新
       localStorage.setItem("silentEye_deviceName", newDeviceName);
       setShowSettings(false);
+      setNewDeviceName(""); // ⭐ 入力欄をクリア
+      setNewDevicePassword(""); // ⭐ パスワード欄もクリア
       alert("設定を更新しました");
     } catch (error) {
       alert("設定の変更に失敗しました");
@@ -566,9 +567,12 @@ export default function AgentPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               リセット
-            </button>
-            <button
-              onClick={() => setShowSettings(false)}
+            </button>            <button
+              onClick={() => {
+                setShowSettings(false);
+                setNewDeviceName(""); // ⭐ 入力欄をクリア
+                setNewDevicePassword(""); // ⭐ パスワード欄もクリア
+              }}
               className="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-light transition-all duration-200 border border-white/10"
             >
               閉じる
