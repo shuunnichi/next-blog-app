@@ -440,20 +440,19 @@ export default function CommanderPage() {
               </div>{/* デバイス選択 */}              <div className="mb-6">
                 <label className="block text-sm text-white/60 mb-2 font-light">
                   デバイス選択
-                </label>
-                <select
+                </label>                <select
                   value={selectedDevice}
                   onChange={(e) => {
                     const deviceId = e.target.value;
                     if (deviceId) {
-                      fetchPhotos(deviceId); // パスワードチェック付き
+                      setSelectedDevice(deviceId); // ステートを更新
                     } else {
                       setSelectedDevice("");
                       setPhotos([]);
                     }
                   }}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
-                >                  <option value="" className="bg-black">-- 選択してください --</option>
+                ><option value="" className="bg-black">-- 選択してください --</option>
                   
                   {/* アクティブなデバイス */}
                   {activeDevices.length > 0 && (
