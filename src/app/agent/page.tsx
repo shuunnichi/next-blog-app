@@ -106,7 +106,7 @@ export default function AgentPage() {
       try {
         // ⭐ Refで即座にチェック（State更新を待たない）
         if (isCapturingRef.current) {
-          console.log("⏭️ 撮影中のためスキップ");
+          console.log("⏭️ 撮影中のためスキップ (isCapturingRef.current = true)");
           return;
         }
         
@@ -114,16 +114,20 @@ export default function AgentPage() {
         if (!response.ok) return;
         const data = await response.json();
         
+        console.log("🔄 Polling result - shouldCapture:", data.shouldCapture, "isCapturingRef:", isCapturingRef.current);
+        
         // ⭐ 二重チェック: Refとdataの両方
         if (data.shouldCapture && !isCapturingRef.current) {
-          console.log("🎯 撮影指令を受信しました");
+          console.log("🎯 撮影指令を受信しました - STARTING CAPTURE");
           isCapturingRef.current = true; // ⭐ 即座にフラグセット
+          console.log("🎯 isCapturingRef.current SET TO:", isCapturingRef.current);
           setIsCapturing(true);
           setStatus("📸 撮影準備中");
           
           // まず shouldCapture をリセット（次のポーリングで再実行されないように）
           // 🔒 deviceTokenを含めて送信
           const deviceToken = localStorage.getItem("silentEye_deviceToken");
+          console.log("🎯 Resetting shouldCapture flag...");
           await fetch(`/api/control/${deviceId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -132,9 +136,11 @@ export default function AgentPage() {
               deviceToken: deviceToken || undefined
             }),
           });
+          console.log("🎯 shouldCapture flag reset - calling capturePhoto()");
           
           // 撮影実行
           await capturePhoto();
+          console.log("🎯 capturePhoto() completed");
         }
       } catch (error) {
         console.error("ポーリングエラー:", error);
@@ -222,9 +228,22 @@ export default function AgentPage() {
       alert(`デバイス登録に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   };
-
   const capturePhoto = async () => {
-    if (!videoRef.current || !canvasRef.current || !isCameraReadyRef.current) return;
+    console.log("🎬 capturePhoto called");
+    console.log("🎬 isCapturingRef.current:", isCapturingRef.current);
+    console.log("🎬 Video ready:", isCameraReadyRef.current);
+    
+    if (!videoRef.current || !canvasRef.current || !isCameraReadyRef.current) {
+      console.log("🎬 Capture aborted - camera not ready");
+      return;
+    }
+    
+    if (isCapturingRef.current) {
+      console.log("🎬 Capture aborted - already capturing");
+      return;
+    }
+    
+    console.log("🎬 Starting capture...");
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
@@ -235,6 +254,7 @@ export default function AgentPage() {
     
     canvas.toBlob(async (blob) => {
       if (!blob || !deviceIdRef.current) return;
+      console.log("🎬 Photo captured, starting upload...");
       setStatus("📸 撮影完了");
       
       const flash = document.createElement("div");
@@ -244,9 +264,12 @@ export default function AgentPage() {
       
       await uploadPhoto(blob);
     }, "image/jpeg", 0.9);
-  };
-  const uploadPhoto = async (blob: Blob) => {
+  };  const uploadPhoto = async (blob: Blob) => {
     if (!deviceIdRef.current) return;
+    
+    console.log("📤 uploadPhoto called");
+    console.log("📤 isCapturingRef.current BEFORE:", isCapturingRef.current);
+    
     const fileName = `${deviceIdRef.current}_${Date.now()}.jpg`;
     const formData = new FormData();
     formData.append("file", blob, fileName);
@@ -275,10 +298,13 @@ export default function AgentPage() {
     } catch (error) {
       console.error("アップロードエラー:", error);
       setStatus("❌ 失敗");
-      setTimeout(() => setStatus("待機中"), 3000);    } finally {
+      setTimeout(() => setStatus("待機中"), 3000);
+    } finally {
+      console.log("📤 FINALLY: Resetting flags...");
       setIsUploading(false);
       setIsCapturing(false); // State版をリセット
       isCapturingRef.current = false; // ⭐ Ref版もリセット
+      console.log("📤 isCapturingRef.current AFTER:", isCapturingRef.current);
     }
   };
 

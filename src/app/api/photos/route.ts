@@ -40,19 +40,24 @@ export async function GET(request: NextRequest) {
     // （ただし、deviceTokenがあれば所有者として認識）
     const deviceToken = searchParams.get("deviceToken");
     const isOwnerByToken = deviceToken && device.id === deviceToken;
+    const isOwnerByUserId = user && device.userId === user.id;
     
     console.log("=== OWNERSHIP CHECK ===");
+    console.log("device.id:", device.id);
     console.log("device.userId:", device.userId);
     console.log("userId:", userId);
-    console.log("deviceToken:", deviceToken ? "[PROVIDED]" : "[NOT PROVIDED]");
+    console.log("deviceToken:", deviceToken ? `[${deviceToken}]` : "[NOT PROVIDED]");
     console.log("isOwnerByToken:", isOwnerByToken);
+    console.log("isOwnerByUserId:", isOwnerByUserId);
     console.log("device.password:", device.password ? "[SET]" : "[NOT SET]");
 
     // パスワードチェック
     if (device.password) {
-      // デバイストークンがあれば所有者として扱う
+      // デバイストークンまたはユーザーIDで所有者として扱う
       if (isOwnerByToken) {
         console.log("Password check: BYPASSED (owner by token)");
+      } else if (isOwnerByUserId) {
+        console.log("Password check: BYPASSED (owner by userId)");
       } else if (!password || password !== device.password) {
         console.log("Password check: FAILED");
         return NextResponse.json({ error: "Password required" }, { status: 403 });
