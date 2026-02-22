@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
         userId,
         name,
         deviceId,
-        password: password || null, // パスワードがあれば保存
-      } as any, // 型キャッシュ問題のため一時的にanyを使用
+        password: password || null,
+      },
     });
 
     // コントロールレコードも作成
