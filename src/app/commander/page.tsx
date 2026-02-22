@@ -174,10 +174,16 @@ export default function CommanderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      });
-
-      console.log("Response status:", response.status);
+      });      console.log("Response status:", response.status);
       console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      
+      if (response.status === 403) {
+        const errorText = await response.text();
+        console.error("Permission denied:", errorText);
+        alert("権限がありません。パスワードが必要です。");
+        setIsCapturing(false);
+        return;
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -802,13 +808,13 @@ export default function CommanderPage() {
               placeholder="パスワードを入力"
               autoFocus
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 font-light placeholder:text-white/30"
-            />
-            <div className="flex gap-3">
+            />            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowPasswordDialog(false);
                   setPasswordInput("");
                   setPendingDeviceId("");
+                  setSelectedDevice(""); // ⭐ デバイス選択もクリア
                 }}
                 className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl font-light transition-all duration-200"
               >

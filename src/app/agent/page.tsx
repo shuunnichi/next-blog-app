@@ -227,8 +227,7 @@ export default function AgentPage() {
       console.error("登録エラー:", error);
       alert(`デバイス登録に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
-  };
-  const capturePhoto = async () => {
+  };  const capturePhoto = async () => {
     console.log("🎬 capturePhoto called");
     console.log("🎬 isCapturingRef.current:", isCapturingRef.current);
     console.log("🎬 Video ready:", isCameraReadyRef.current);
@@ -238,10 +237,7 @@ export default function AgentPage() {
       return;
     }
     
-    if (isCapturingRef.current) {
-      console.log("🎬 Capture aborted - already capturing");
-      return;
-    }
+    // ⭐ 重複チェックを削除（ポーリング処理で既にフラグセット済み）
     
     console.log("🎬 Starting capture...");
     const video = videoRef.current;
@@ -264,7 +260,7 @@ export default function AgentPage() {
       
       await uploadPhoto(blob);
     }, "image/jpeg", 0.9);
-  };  const uploadPhoto = async (blob: Blob) => {
+  };const uploadPhoto = async (blob: Blob) => {
     if (!deviceIdRef.current) return;
     
     console.log("📤 uploadPhoto called");
