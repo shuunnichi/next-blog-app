@@ -40,12 +40,13 @@ export default function AgentPage() {
   const updateDeviceId = (id: string) => {
     setDeviceId(id);
     deviceIdRef.current = id;
-  };
-  const fetchPhotos = async (devId: string) => {
+  };  const fetchPhotos = async (devId: string) => {
     try {
       console.log("📷 Fetching photos for device:", devId);
       const deviceToken = localStorage.getItem("silentEye_deviceToken");
+      console.log("📷 DeviceToken:", deviceToken ? "[EXISTS]" : "[NOT EXISTS]");
       const url = `/api/photos?deviceId=${devId}${deviceToken ? `&deviceToken=${deviceToken}` : ''}`;
+      console.log("📷 Request URL:", url);
       const response = await fetch(url);
       console.log("📷 Response status:", response.status);
       if (response.ok) {
@@ -56,12 +57,13 @@ export default function AgentPage() {
         setPhotos(data);
         console.log("📷 Photos state updated!");
       } else {
-        console.error("📷 Failed to fetch photos:", response.status);
+        const errorText = await response.text();
+        console.error("📷 Failed to fetch photos:", response.status, errorText);
       }
     } catch (error) {
       console.error("Failed to fetch photos:", error);
     }
-  };  // ⭐ 最優先：初回マウント時の処理
+  };// ⭐ 最優先：初回マウント時の処理
   useEffect(() => {
     console.log("=".repeat(80));
     console.log("🚀🚀🚀 INITIAL USEEFFECT RUNNING - VERSION 2026-02-23 v2 🚀🚀🚀");
@@ -97,6 +99,8 @@ export default function AgentPage() {
   }, [photos]);  // ポーリング用useEffect
   useEffect(() => {
     if (!deviceId || !isRegistered || !isPollingEnabled) return;
+    
+    console.log("🔄 Setting up polling interval for device:", deviceId);
     
     const interval = setInterval(async () => {
       try {
@@ -139,8 +143,11 @@ export default function AgentPage() {
       }
     }, 2000);
 
-    return () => clearInterval(interval);
-  }, [deviceId, isRegistered, isPollingEnabled, isCapturing]);
+    return () => {
+      console.log("🛑 Clearing polling interval");
+      clearInterval(interval);
+    };
+  }, [deviceId, isRegistered, isPollingEnabled]); // ⭐ isCaptureを依存配列から削除
 
   const startCamera = async () => {
     try {
