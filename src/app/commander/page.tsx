@@ -8,6 +8,7 @@ interface Device {
   deviceId: string;
   name: string;
   createdAt: string;
+  password?: string | null; // ⭐ パスワードフィールド追加
   updatedAt?: string;
 }
 
@@ -462,13 +463,12 @@ export default function CommanderPage() {
                   }}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200"
                 ><option value="" className="bg-black">-- 選択してください --</option>
-                  
-                  {/* アクティブなデバイス */}
+                    {/* アクティブなデバイス */}
                   {activeDevices.length > 0 && (
                     <optgroup label="● アクティブ" className="bg-black">
                       {activeDevices.map((device) => (
                         <option key={device.id} value={device.deviceId} className="bg-black">
-                          {device.name}
+                          {device.password ? '🔒 ' : ''}{device.name}
                         </option>
                       ))}
                     </optgroup>
@@ -476,16 +476,15 @@ export default function CommanderPage() {
                   
                   {/* 非アクティブなデバイス */}
                   {inactiveDevices.length > 0 && (
-                    <optgroup label="○ オフライン" className="bg-black">
-                      {inactiveDevices.map((device) => (
+                    <optgroup label="○ オフライン" className="bg-black">                      {inactiveDevices.map((device) => (
                         <option key={device.id} value={device.deviceId} className="bg-black">
-                          {device.name}
+                          {device.password ? '🔒 ' : ''}{device.name}
                         </option>
                       ))}
                     </optgroup>
                   )}
                 </select>
-              </div>              {/* 撮影ボタン */}
+              </div>{/* 撮影ボタン */}
               <button
                 onClick={sendCaptureCommand}
                 disabled={!selectedDevice || isCapturing}
