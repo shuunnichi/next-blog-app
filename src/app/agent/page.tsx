@@ -19,6 +19,7 @@ export default function AgentPage() {
   const isCameraReadyRef = useRef<boolean>(false);
   const deviceIdRef = useRef<string>("");
   const isCapturingRef = useRef<boolean>(false); // ⭐ Ref版追加（重要）
+  const lastCaptureTimeRef = useRef<number>(0);
   
   const [deviceId, setDeviceId] = useState<string>("");
   const [deviceName, setDeviceName] = useState<string>("");
@@ -118,29 +119,36 @@ export default function AgentPage() {
         
         // ⭐ 二重チェック: Refとdataの両方
         if (data.shouldCapture && !isCapturingRef.current) {
+          // 🛡️ 二重撮影防止: 5秒以内はスキップ
+          const now = Date.now();
+          if (now - lastCaptureTimeRef.current < 5000) {
+            console.log("⏭️ 前回撮影から5秒未満のためスキップ");
+            return;
+          }
           console.log("🎯 撮影指令を受信しました - STARTING CAPTURE");
-          isCapturingRef.current = true; // ⭐ 即座にフラグセット
-          console.log("🎯 isCapturingRef.current SET TO:", isCapturingRef.current);
+          isCapturingRef.current = true;
+          lastCaptureTimeRef.current = now;
           setIsCapturing(true);
           setStatus("📸 撮影準備中");
-          
-          // まず shouldCapture をリセット（次のポーリングで再実行されないように）
-          // 🔒 deviceTokenを含めて送信
+          // 🚀 即座にフラグリセット（awaitしない）
           const deviceToken = localStorage.getItem("silentEye_deviceToken");
-          console.log("🎯 Resetting shouldCapture flag...");
-          await fetch(`/api/control/${deviceId}`, {
+          fetch(`/api/control/${deviceId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
               shouldCapture: false,
               deviceToken: deviceToken || undefined
             }),
-          });
-          console.log("🎯 shouldCapture flag reset - calling capturePhoto()");
-          
-          // 撮影実行
-          await capturePhoto();
-          console.log("🎯 capturePhoto() completed");
+          }).catch(err => console.error("❌ Reset failed:", err));
+          // 📸 撮影実行
+          capturePhoto()
+            .then(() => console.log("✅ 撮影完了"))
+            .catch(err => console.error("❌ 撮影失敗:", err))
+            .finally(() => {
+              isCapturingRef.current = false;
+              setIsCapturing(false);
+              setStatus("待機中");
+            });
         }
       } catch (error) {
         console.error("ポーリングエラー:", error);

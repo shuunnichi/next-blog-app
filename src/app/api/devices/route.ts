@@ -125,15 +125,17 @@ export async function DELETE(request: NextRequest) {
     const user = await getCurrentUser();
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get("deviceId");
+    const deviceToken = searchParams.get("deviceToken");
+    const password = searchParams.get("password");
 
     console.log("=== DELETE /api/devices ===");
     console.log("deviceId:", deviceId);
+    console.log("deviceToken:", deviceToken);
+    console.log("user:", user?.id);
 
     if (!deviceId) {
       return NextResponse.json({ error: "deviceId is required" }, { status: 400 });
-    }
-
-    // デバイスを取得
+    }    // デバイスを取得
     const device = await prisma.device.findFirst({
       where: { deviceId },
     });
@@ -142,9 +144,38 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Device not found" }, { status: 404 });
     }
 
-    // デバイスの所有者確認（認証がある場合のみ）
-    if (user && device.userId !== user.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔒 3段階認証チェック（優先順位順）
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let isAuthorized = false;
+
+    // 1️⃣ デバイストークンによる認証（最優先）
+    if (deviceToken && deviceToken === device.id) {
+      console.log("✅ Authorized by deviceToken");
+      isAuthorized = true;
+    }
+    // 2️⃣ ユーザーIDによる所有者確認
+    else if (user && device.userId === user.id) {
+      console.log("✅ Authorized by userId");
+      isAuthorized = true;
+    }
+    // 3️⃣ パスワードによる認証
+    else if (device.password && password === device.password) {
+      console.log("✅ Authorized by password");
+      isAuthorized = true;
+    }
+    // 4️⃣ パスワード未設定かつ認証なし（後方互換性）
+    else if (!device.password && !user) {
+      console.log("⚠️ Authorized: no password and no auth (legacy)");
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      console.log("❌ Unauthorized delete attempt");
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid credentials" },
+        { status: 403 }
+      );
     }
 
     // デバイスに紐づく写真を取得
