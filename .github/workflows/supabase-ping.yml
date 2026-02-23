@@ -1,0 +1,13 @@
+name: Keep Supabase Awake
+
+on:
+  schedule:
+    - cron: '0 0 */2 * *' # 2日に1回（1日おき）
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Vercel endpoint (API)
+        run: |
+          curl -s https://silent-camera-v1.vercel.app/api/devices || true
