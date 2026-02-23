@@ -43,9 +43,11 @@ Commander（PC側）からボタン一つで、離れた場所にあるAgent（�
 <img width="1253" height="789" alt="image" src="https://github.com/user-attachments/assets/2b810b0b-c849-439d-acfa-3321a37df33e" />
 
 2. **Agent モード**
-<img width="506" height="900" alt="image" src="https://github.com/user-attachments/assets/5045ba7a-d58c-4c83-bca1-57a0fa765d26" />
+<img width="375" height="667" alt="image" src="https://github.com/user-attachments/assets/5045ba7a-d58c-4c83-bca1-57a0fa765d26" />
 
-<img width="506" height="900" alt="image" src="https://github.com/user-attachments/assets/1fe41b31-2d72-445c-9c5d-fc6328ea988f" />
+<img width="375" height="667" alt="image" src="https://github.com/user-attachments/assets/1fe41b31-2d72-445c-9c5d-fc6328ea988f" />
+
+<img width="375" height="667" alt="IMG_4004" src="https://github.com/user-attachments/assets/e480b793-6e4c-47fe-ae7d-aa8056a93c8c" />
 
 3. **Commander モード**
 <img width="1903" height="1040" alt="image" src="https://github.com/user-attachments/assets/9df557ff-6d97-4447-9531-59909c533715" />
