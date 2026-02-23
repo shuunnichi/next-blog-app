@@ -43,6 +43,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // デバイス名重複チェック（同じuserId内で同名禁止）
+    const existing = await prisma.device.findFirst({
+      where: { userId, name },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { error: "同じ名前のデバイスが既に存在します" },
+        { status: 409 }
+      );
+    }
+
     // ユニークなデバイスIDを生成（完全ランダム化）
     const deviceId = crypto.randomUUID();    // デバイス作成
     const device = await prisma.device.create({

@@ -194,18 +194,15 @@ export default function AgentPage() {
     try {
       const checkResponse = await fetch("/api/devices");
       if (checkResponse.ok) {
-        const existingDevices = await checkResponse.json();        const existingDevice = existingDevices.find((d: any) => d.name === deviceName);
+        const existingDevices = await checkResponse.json();
+        const existingDevice = existingDevices.find((d: any) => d.name === deviceName);
         if (existingDevice) {
-          updateDeviceId(existingDevice.deviceId);
-          setIsRegistered(true);
-          localStorage.setItem("silentEye_deviceId", existingDevice.deviceId);
-          localStorage.setItem("silentEye_deviceName", deviceName);
-          localStorage.setItem("silentEye_deviceToken", existingDevice.id); // デバイストークンを保存
-          await startCamera();
-          await fetchPhotos(existingDevice.deviceId);
+          // 既存デバイス名があっても新規登録は不可にする
+          alert("このデバイス名は既に使われています。他の名前を入力してください。");
           return;
         }
-      }      const response = await fetch("/api/devices", {
+      }
+      const response = await fetch("/api/devices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -213,15 +210,17 @@ export default function AgentPage() {
           password: devicePassword || undefined // パスワードがあれば送信
         }),
       });
-      
       console.log("Registration response status:", response.status);
-      
+      if (response.status === 409) {
+        alert("このデバイス名は既に使われています。他の名前を入力してください。");
+        return;
+      }
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Registration failed:", response.status, errorText);
         throw new Error(`登録失敗: ${response.status} - ${errorText}`);
       }
-        const data = await response.json();
+      const data = await response.json();
       console.log("Registration successful:", data);
       
       updateDeviceId(data.deviceId);
