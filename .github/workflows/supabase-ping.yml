@@ -1,13 +1,22 @@
-name: Keep Supabase Awake
+name: Prevent Supabase Sleep (Daily Ping)
 
 on:
   schedule:
-    - cron: '0 0 */2 * *' # 2日に1回（1日おき）
+    # UTC 01:15 AM に実行 (JST 10:15 AM)
+    - cron: "15 1 * * *"
+  workflow_dispatch:
 
 jobs:
-  ping:
+  make_request:
     runs-on: ubuntu-latest
+    env:
+      TZ: "Asia/Tokyo"
+
     steps:
-      - name: Ping Vercel endpoint (API)
+      - name: Send HTTP GET request
         run: |
-          curl -s https://silent-camera-v1.vercel.app/api/devices || true
+          curl -X GET "https://silent-camera-v1.vercel.app/api/devices" -v --fail || exit 1
+
+      - name: Log request time
+        run: |
+          echo "Keep-alive ping completed at $(date)"
